@@ -24,6 +24,9 @@ class Database {
 
     static vector<fs::path> get_sorted_ssts(const string &path);
 
+    static vector<pair<int64_t, int64_t> > scan_in_sst(const string &file_path,
+                                                       const int64_t &startKey, const int64_t &endKey);
+
 public:
     explicit Database(const size_t memtable_size) : memtable_(memtable_size) {
     }
@@ -38,7 +41,7 @@ public:
 
     vector<pair<int64_t, int64_t> > scan(const int64_t &startKey, const int64_t &endKey) const;
 
-    void flushToFile();
+    void flush_to_sst();
 };
 
 #endif //DATABASE_H
