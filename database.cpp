@@ -72,6 +72,7 @@ optional<int64_t> Database::get(const int64_t &key) const {
     auto ssts = get_sorted_ssts(db_name_);
 
     for (const auto &entry: ssts) {
+        cout << " Get in " << entry.string() << endl;
         optional<int64_t> file_value = binary_search_in_sst(entry.string(), key);
         if (file_value.has_value()) {
             return file_value;
@@ -98,7 +99,7 @@ optional<int64_t> Database::binary_search_in_sst(const string &file_path, const 
     }
 
     const size_t file_size = getFileSize(fd);
-    const size_t num_pages = file_size / kPageSize;
+    const size_t num_pages = (file_size + kPageSize - 1) / kPageSize;
 
     size_t left = 0;
     size_t right = num_pages - 1;
@@ -111,10 +112,11 @@ optional<int64_t> Database::binary_search_in_sst(const string &file_path, const 
         ssize_t bytes_read = pread(fd, page.data(), kPageSize, offset);
         if (bytes_read < 0) {
             cout << "  Could not find key " << key << " in " << file_path << endl;
-            break;
+            ::close(fd);
+            return nullopt;
         }
 
-        constexpr size_t num_pairs = kPageSize / kPairSize;
+        const size_t num_pairs = bytes_read / kPairSize;
 
         const int64_t *kv_pairs = reinterpret_cast<const int64_t *>(page.data());
         const int64_t first_key = kv_pairs[0];
@@ -164,6 +166,7 @@ optional<int64_t> Database::binary_search_in_sst(const string &file_path, const 
         }
     }
 
+    cout << "  2 Could not find key " << key << " in " << file_path << endl;
     ::close(fd);
     return nullopt;
 }
