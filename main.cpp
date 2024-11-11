@@ -1,25 +1,32 @@
 #include <iostream>
 
+#include "constants.h"
+#include "database.h"
 #include "memtable.h"
 
 using namespace std;
 
 int main() {
-    Memtable table;
+    Database db(kMemtableSize);;
+    db.open("db1");
 
-    table.Put(1, 100);
-    table.Put(2, 200);
-    table.Put(3, 300);
+    // for (auto i=1;i<=2048;++i) {
+    //     db.put(i, i*10);
+    // }
 
-    const auto value = table.Get(2);
+    constexpr int64_t key = 1000;
+    const auto value = db.get(key);
     if (value.has_value()) {
-        cout << value.value() << endl;
+        cout << "Get key " << key << " returns " << value.value() << endl;
     } else {
-        cout << "Not found" << endl;
+        cout << "Key " << key << " not found" << endl;
     }
 
-    const auto res = table.Scan(1, 3);
-    for (const auto &s: res) {
-        cout << s.first << ": " << s.second << endl;
-    }
+    // cout << "Scan result: " << endl;
+    // const auto res = table.Scan(1, 3);
+    // for (const auto &s: res) {
+    //     cout << s.first << ": " << s.second << endl;
+    // }
+
+    db.close();
 }
