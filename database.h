@@ -11,15 +11,18 @@
 #include "memtable.h"
 
 using namespace std;
+namespace fs = std::filesystem;
 
 class Database {
     string db_name_;
     Memtable memtable_;
     long sst_counter_;
 
-    size_t getFileSize(int fd) const;
+    static size_t getFileSize(int fd);
 
-    optional<int64_t> binary_search(const int64_t &key) const;
+    static optional<int64_t> binary_search_in_sst(const string &file_path, const int64_t &key);
+
+    static vector<fs::path> get_sorted_ssts(const string &path);
 
 public:
     explicit Database(const size_t memtable_size) : memtable_(memtable_size) {

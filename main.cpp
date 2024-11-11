@@ -10,11 +10,11 @@ int main() {
     Database db(kMemtableSize);;
     db.open("db1");
 
-    // for (auto i=1;i<=2048;++i) {
-    //     db.put(i, i*10);
+    // for (auto i = 50001; i <= 55000; ++i) {
+    //     db.put(i, i * 10);
     // }
 
-    constexpr int64_t key = 1000;
+    constexpr int64_t key = 51234;
     const auto value = db.get(key);
     if (value.has_value()) {
         cout << "Get key " << key << " returns " << value.value() << endl;
