@@ -9,9 +9,9 @@
 // int64_t occupies 8 Bytes
 inline constexpr size_t kPairSize = 2 * sizeof(int64_t); // 16 Bytes
 
-// let 1 page contain 256 key-value pairs
-// 1 page contains 256 * 16 = 4KB
-inline constexpr size_t kPageSize = 256 * kPairSize; // 4KB
+// let 1 page occupies 4KB
+// 1 page contains 4 * 1024 / 16 = 256 key-value pairs
+inline constexpr size_t kPageSize = 4096; // 4KB
 
 // let 1 memtable contain 8 pages
 inline constexpr size_t kPageNum = 8;

@@ -7,14 +7,33 @@
 using namespace std;
 
 int main() {
-    Database db(kMemtableSize);;
-    db.open("db1");
+    Database db(kMemtableSize);
+    ;
 
-    // for (auto i = 1; i <= 500; ++i) {
+    db.open("db1");
+    // for (auto i = 1; i <= 5000; ++i) {
+    //     db.put(i, i * 10);
+    // }
+    // db.close();
+    //
+    // db.open("db1");
+    // for (auto i = 500; i <= 1000; ++i) {
     //     db.put(i, i * 100);
     // }
+    // db.close();
+    //
+    // db.open("db1");
+    // for (auto i = 400; i <= 600; ++i) {
+    //     db.put(i, i * 1000);
+    // }
+    // db.close();
 
-    constexpr int64_t key = 51234;
+    // for (auto i = 1; i <= 1024; ++i) {
+    //     db.put(i, -i * 10);
+    // }
+
+
+    constexpr int64_t key = 1024;
     const auto value = db.get(key);
     cout << "Get result: " << endl;
     if (value.has_value()) {
@@ -23,7 +42,10 @@ int main() {
         cout << " Key " << key << " not found" << endl;
     }
 
-    const auto res = db.scan(300, 800);
+    const auto res = db.scan(1024, 4096);
+    // for (const auto &s: res) {
+    //     cout << s.first << ": " << s.second << endl;
+    // }
     // print the first and last pairs
     cout << "Scan result: " << endl;
     cout << " First pairs: " << res.front().first << ": " << res.front().second << endl;

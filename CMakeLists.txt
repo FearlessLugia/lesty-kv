@@ -6,7 +6,10 @@ set(CMAKE_CXX_STANDARD 20)
 add_executable(kv main.cpp
         memtable.cpp
         memtable.h
+        sstable.cpp
+        sstable.h
         database.cpp
         database.h
         constants.h
+        sstable.cpp
 )
