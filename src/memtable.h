@@ -19,17 +19,17 @@ public:
     explicit Memtable(const size_t max_size) : memtable_size(max_size) {
     }
 
-    void put(const int64_t &key, const int64_t &value);
+    void Put(const int64_t &key, const int64_t &value);
 
-    optional<int64_t> get(const int64_t &key) const;
+    optional<int64_t> Get(const int64_t &key) const;
 
-    vector<pair<int64_t, int64_t> > scan(const int64_t &startKey, const int64_t &endKey) const;
+    vector<pair<int64_t, int64_t> > Scan(const int64_t &startKey, const int64_t &endKey) const;
 
-    vector<pair<int64_t, int64_t> > traverse() const;
+    vector<pair<int64_t, int64_t> > Traverse() const;
 
     void clear();
 
-    size_t size() const;
+    size_t Size() const;
 };
 
 #endif //MEMTABLE_H

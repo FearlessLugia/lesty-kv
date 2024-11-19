@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "constants.h"
+#include "../utils/constants.h"
 #include "database.h"
 #include "memtable.h"
 
@@ -10,7 +10,7 @@ int main() {
     Database db(kMemtableSize);
     ;
 
-    db.open("db1");
+    db.Open("db1");
     // for (auto i = 1; i <= 5000; ++i) {
     //     db.put(i, i * 10);
     // }
@@ -34,7 +34,7 @@ int main() {
 
 
     constexpr int64_t key = 1024;
-    const auto value = db.get(key);
+    const auto value = db.Get(key);
     cout << "Get result: " << endl;
     if (value.has_value()) {
         cout << " Get key " << key << " returns " << value.value() << endl;
@@ -42,7 +42,7 @@ int main() {
         cout << " Key " << key << " not found" << endl;
     }
 
-    const auto res = db.scan(1024, 4096);
+    const auto res = db.Scan(1024, 4096);
     // for (const auto &s: res) {
     //     cout << s.first << ": " << s.second << endl;
     // }
@@ -51,5 +51,5 @@ int main() {
     cout << " First pairs: " << res.front().first << ": " << res.front().second << endl;
     cout << " Last pairs: " << res.back().first << ": " << res.back().second << endl;
 
-    db.close();
+    db.Close();
 }
