@@ -1,0 +1,29 @@
+//
+// Created by Kiiro Huang on 24-11-19.
+//
+
+#include <iostream>
+
+#include "test_base.h"
+#include "test_buffer_pool.cpp"
+#include "test_db.cpp"
+
+using namespace std;
+
+int main() {
+    cout << endl << "Running tests..." << endl;
+
+    bool allTestPassed = true;
+    vector<std::pair<TestBase *, string>> testClasses = {make_pair(new TestBufferPool(), "TestBufferPool"),
+                                                         make_pair(new TestDb(), "TestDb")};
+
+    for (auto [testClass, name]: testClasses) {
+        cout << "Running " << name << endl;
+        allTestPassed &= testClass->RunTests();
+        cout << "==============================\n";
+    }
+
+    if (allTestPassed) {
+        cout << "All Tests Passed." << endl;
+    }
+}
