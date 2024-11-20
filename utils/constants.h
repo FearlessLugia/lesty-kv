@@ -22,5 +22,7 @@ inline constexpr size_t kPageNum = 8;
 // 1 memtable contains 2048 * 16 = 32KB
 inline constexpr size_t kMemtableSize = kPageSize * kPageNum; // 32KB
 
+// when buffer pool reaches 80% of its capacity, it will evict some pages
+inline constexpr size_t kCoeffBufferPool = 0.8;
 
 #endif // CONSTANTS_H

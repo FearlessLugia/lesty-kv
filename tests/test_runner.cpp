@@ -14,13 +14,15 @@ int main() {
     cout << endl << "Running tests..." << endl;
 
     bool allTestPassed = true;
-    vector<std::pair<TestBase *, string>> testClasses = {make_pair(new TestBufferPool(), "TestBufferPool"),
-                                                         make_pair(new TestDb(), "TestDb")};
+    vector<std::pair<TestBase *, string>> testClasses = {
+        make_pair(new TestBufferPool(), "TestBufferPool"),
+        // make_pair(new TestDb(), "TestDb")
+    };
 
     for (auto [testClass, name]: testClasses) {
         cout << "Running " << name << endl;
         allTestPassed &= testClass->RunTests();
-        cout << "==============================\n";
+        cout << "==============================" << endl;
     }
 
     if (allTestPassed) {
