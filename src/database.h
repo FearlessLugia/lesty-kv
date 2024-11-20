@@ -4,8 +4,8 @@
 
 #ifndef DATABASE_H
 #define DATABASE_H
-#include <string>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "memtable.h"
@@ -16,10 +16,10 @@ namespace fs = std::filesystem;
 
 class Database {
     string db_name_;
-    Memtable memtable_;
+    Memtable *memtable_;
 
     long sst_counter_;
-    vector<SSTable> sstables_;
+    vector<SSTable> *sstables_;
 
     // static off_t get_file_size(int fd);
 
@@ -28,10 +28,16 @@ class Database {
     static vector<fs::path> GetSortedSsts(const string &path);
 
     // static vector<pair<int64_t, int64_t> > scan_in_sst(const string &file_path,
-                                                       // const int64_t &startKey, const int64_t &endKey);
+    // const int64_t &startKey, const int64_t &endKey);
 
 public:
-    explicit Database(const size_t memtable_size) : memtable_(memtable_size) {
+    explicit Database(const size_t memtable_size) : memtable_(nullptr) { memtable_ = new Memtable(memtable_size); }
+
+    ~Database() {
+        delete memtable_;
+        // for (auto &sst: sstables_) {
+        //     sst.~SSTable();
+        // }
     }
 
     void Open(const string &db_name);
@@ -42,9 +48,9 @@ public:
 
     optional<int64_t> Get(const int64_t &key) const;
 
-    vector<pair<int64_t, int64_t> > Scan(const int64_t &startKey, const int64_t &endKey) const;
+    vector<pair<int64_t, int64_t>> Scan(const int64_t &startKey, const int64_t &endKey) const;
 
     void FlushToSst();
 };
 
-#endif //DATABASE_H
+#endif // DATABASE_H

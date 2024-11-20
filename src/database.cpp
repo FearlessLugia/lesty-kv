@@ -60,11 +60,11 @@ vector<fs::path> Database::GetSortedSsts(const string &path) {
 }
 
 void Database::Close() {
-    if (memtable_.Size() > 0) {
+    if (memtable_->Size() > 0) {
         cout << "Closing database and flushing memtable to SSTs: " << db_name_ << endl;
 
         FlushToSst();
-        memtable_.clear();
+        memtable_->clear();
     }
 
     // for (auto &sst: sstables_) {
@@ -75,12 +75,12 @@ void Database::Close() {
 }
 
 void Database::Put(const int64_t &key, const int64_t &value) {
-    memtable_.Put(key, value);
+    memtable_->Put(key, value);
 
-    if (memtable_.Size() >= memtable_.memtable_size) {
+    if (memtable_->Size() >= memtable_->memtable_size) {
         cout << " Memtable is full, flushing to SSTs" << endl;
         FlushToSst();
-        memtable_.clear();
+        memtable_->clear();
     }
 }
 
@@ -88,7 +88,7 @@ optional<int64_t> Database::Get(const int64_t &key) const {
     cout << "Get key: " << key << endl;
 
     // find in memtable
-    const auto value = memtable_.Get(key);
+    const auto value = memtable_->Get(key);
     if (value.has_value()) {
         return value;
     }
@@ -116,7 +116,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &startKey, const int
     unordered_set<int64_t> found_keys;
 
     // find in memtable
-    vector<pair<int64_t, int64_t>> memtable_results = memtable_.Scan(startKey, endKey);
+    vector<pair<int64_t, int64_t>> memtable_results = memtable_->Scan(startKey, endKey);
     result.insert(result.end(), memtable_results.begin(), memtable_results.end());
 
     // find in SSTs from the newest to the oldest
@@ -153,7 +153,7 @@ void Database::FlushToSst() {
         exit(1);
     }
 
-    for (const auto &[key, value]: memtable_.Traverse()) {
+    for (const auto &[key, value]: memtable_->Traverse()) {
         outfile.write(reinterpret_cast<const char *>(&key), sizeof(key));
         outfile.write(reinterpret_cast<const char *>(&value), sizeof(value));
     }
