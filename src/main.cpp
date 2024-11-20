@@ -3,12 +3,12 @@
 #include "../utils/constants.h"
 #include "database.h"
 #include "memtable.h"
+#include "../utils/log.h"
 
 using namespace std;
 
 int main() {
     Database db(kMemtableSize);
-    ;
 
     db.Open("db1");
     // for (auto i = 1; i <= 5000; ++i) {
@@ -35,21 +35,21 @@ int main() {
 
     constexpr int64_t key = 1024;
     const auto value = db.Get(key);
-    cout << "Get result: " << endl;
+    LOG("Get result: ");
     if (value.has_value()) {
-        cout << " Get key " << key << " returns " << value.value() << endl;
+        LOG(" Get key " << key << " returns " << value.value());
     } else {
-        cout << " Key " << key << " not found" << endl;
+        LOG(" Key " << key << " not found");
     }
 
     const auto res = db.Scan(1024, 4096);
     // for (const auto &s: res) {
-    //     cout << s.first << ": " << s.second << endl;
+    //     LOG(s.first << ": " << s.second);
     // }
     // print the first and last pairs
-    cout << "Scan result: " << endl;
-    cout << " First pairs: " << res.front().first << ": " << res.front().second << endl;
-    cout << " Last pairs: " << res.back().first << ": " << res.back().second << endl;
+    LOG("Scan result: ");
+    LOG(" First pairs: " << res.front().first << ": " << res.front().second);
+    LOG(" Last pairs: " << res.back().first << ": " << res.back().second);
 
     db.Close();
 }

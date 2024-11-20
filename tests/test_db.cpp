@@ -6,6 +6,7 @@
 
 #include "../src/database.h"
 #include "../utils/constants.h"
+#include "../utils/log.h"
 #include "test_base.h"
 
 class TestDb : public TestBase {
@@ -48,7 +49,7 @@ class TestDb : public TestBase {
 
         const auto res = db.Scan(1024, 4096);
         for (const auto &s: res) {
-            cout << s.first << ": " << s.second << endl;
+            LOG(s.first << ": " << s.second);
         }
         // print the first and last pairs
         // cout << "Scan result: " << endl;

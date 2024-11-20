@@ -4,6 +4,7 @@
 
 #include "sstable.h"
 #include "../utils/constants.h"
+#include "../utils/log.h"
 
 #include <iostream>
 #include <sys/fcntl.h>
@@ -32,7 +33,7 @@ SSTable::~SSTable() {
 off_t SSTable::GetFileSize() const {
     const off_t file_size = lseek(fd_, 0, SEEK_END);
     if (file_size == -1) {
-        cerr << "  Failed to determine file size: " << strerror(errno) << endl;
+        cerr << "  Failed to determine file size: " << strerror(errno)<< endl;
         return -1;
     }
     return file_size;
@@ -115,7 +116,7 @@ optional<int64_t> SSTable::Get(const int64_t key) const {
     // max key is smaller than key, no need to scan
     // min key is larger than key, no need to scan
     if (max_key_ < key || min_key_ > key) {
-        cout << "\t\tno value in this sst" << endl;
+        LOG("\t\tno value in this sst");
 
         return nullopt;
     }
@@ -136,7 +137,7 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
         vector<char> page(kPageSize);
         ssize_t bytes_read = pread(fd_, page.data(), kPageSize, offset);
         if (bytes_read < 0) {
-            cout << "\tCould not find key " << key << " in " << file_path_ << endl;
+            LOG("\tCould not find key " << key << " in " << file_path_);
             return nullopt;
         }
 
@@ -148,12 +149,12 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
 
         if (key == first_key) {
             ::close(fd_);
-            cout << "\t\tFound key " << key << " in " << file_path_ << endl;
+            LOG("\t\tFound key " << key << " in " << file_path_);
             return kv_pairs[1];
         }
         if (key == last_key) {
             ::close(fd_);
-            cout << "\t\tFound key " << key << " in " << file_path_ << endl;
+            LOG("\t\tFound key " << key << " in " << file_path_);
             return kv_pairs[num_pairs * 2 - 1];
         }
 
@@ -168,7 +169,7 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
 
                 if (mid_key == key) {
                     ::close(fd_);
-                    cout << "\t\tFound key " << key << " in " << file_path_ << endl;
+                    LOG("\t\tFound key " << key << " in " << file_path_);
                     return kv_pairs[page_mid * 2 + 1];
                 }
 
@@ -190,7 +191,7 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
         }
     }
 
-    cout << "  2 Could not find key " << key << " in " << file_path_ << endl;
+    LOG("  2 Could not find key " << key << " in " << file_path_);
     ::close(fd_);
     return nullopt;
 }
@@ -201,7 +202,7 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
     // max key is smaller than start key, no need to scan
     // min key is larger than end key, no need to scan
     if (max_key_ < start_key || min_key_ > end_key) {
-        cout << "\t\tno value in this sst" << endl;
+        LOG("\t\tno value in this sst");
 
         return result;
     }
@@ -209,15 +210,15 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
     int64_t start_offset;
     if (min_key_ > start_key) {
         // min key is larger than end key, scan from the beginning
-        cout << "\t\tmin key " << min_key_ << " is larger than start key " << start_key << ", scan from the beginning"
-             << endl;
+        LOG("\t\tmin key " << min_key_ << " is larger than start key " << start_key << ", scan from the beginning"
+            );
 
         start_offset = 0;
     } else {
         // else, binary search to find the upper bound of the start key
         start_offset = BinarySearchUpperbound(start_key);
     }
-    cout << "\t\t\tstart offset: " << start_offset << endl;
+    LOG("\t\t\tstart offset: " << start_offset);
 
 
     // Found start key, linear search to find end key
@@ -225,7 +226,7 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
     for (const auto &[key, value]: values) {
         result.emplace_back(key, value);
     }
-    cout << "\t\tresult size: " << result.size() << endl;
+    LOG("\t\tresult size: " << result.size());
 
     return result;
 }
@@ -244,7 +245,7 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key) const {
         vector<char> page(kPageSize);
         ssize_t bytes_read = pread(fd_, page.data(), kPageSize, offset);
         if (bytes_read < 0) {
-            cout << "\tCould not read page at offset " << offset << " in " << file_path_ << endl;
+            LOG("\tCould not read page at offset " << offset << " in " << file_path_);
             return -1;
         }
 
@@ -271,7 +272,7 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key) const {
     vector<char> page(kPageSize);
     ssize_t bytes_read = pread(fd_, page.data(), kPageSize, page_offset);
     if (bytes_read < 0) {
-        cout << "\tCould not read page at offset " << page_offset << " in " << file_path_ << endl;
+        LOG("\tCould not read page at offset " << page_offset << " in " << file_path_);
         return -1;
     }
 

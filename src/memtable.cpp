@@ -3,6 +3,7 @@
 //
 
 #include "memtable.h"
+#include "../utils/log.h"
 
 using namespace std;
 

@@ -10,18 +10,18 @@
 #include <sstream>
 #include <unistd.h> // for pread, close
 #include <unordered_set>
-
 #include "../utils/constants.h"
+#include "../utils/log.h"
 
 void Database::Open(const string &db_name) {
     db_name_ = db_name;
 
     if (!filesystem::exists(db_name)) {
         filesystem::create_directory(db_name);
-        cout << "Database created: " << db_name << endl;
+        LOG("Database created: " << db_name);
         sst_counter_ = 0;
     } else {
-        cout << "Database opened: " << db_name << endl;
+        LOG("Database opened: " << db_name);
 
         // find the largest SST file number
         sst_counter_ = 0;
@@ -61,7 +61,7 @@ vector<fs::path> Database::GetSortedSsts(const string &path) {
 
 void Database::Close() {
     if (memtable_->Size() > 0) {
-        cout << "Closing database and flushing memtable to SSTs: " << db_name_ << endl;
+        LOG("Closing database and flushing memtable to SSTs: " << db_name_);
 
         FlushToSst();
         memtable_->clear();
@@ -71,21 +71,21 @@ void Database::Close() {
     //     sst.~SSTable();
     // }
 
-    cout << "Database closed" << endl;
+    LOG("Database closed");
 }
 
 void Database::Put(const int64_t &key, const int64_t &value) {
     memtable_->Put(key, value);
 
     if (memtable_->Size() >= memtable_->memtable_size) {
-        cout << " Memtable is full, flushing to SSTs" << endl;
+        LOG(" Memtable is full, flushing to SSTs");
         FlushToSst();
         memtable_->clear();
     }
 }
 
 optional<int64_t> Database::Get(const int64_t &key) const {
-    cout << "Get key: " << key << endl;
+    LOG("Get key: " << key);
 
     // find in memtable
     const auto value = memtable_->Get(key);
@@ -97,7 +97,7 @@ optional<int64_t> Database::Get(const int64_t &key) const {
     auto ssts = GetSortedSsts(db_name_);
 
     for (const auto &entry: ssts) {
-        cout << " Get in " << entry.string() << endl;
+        LOG(" Get in " << entry.string());
 
         const auto sst = SSTable(entry);
         auto sst_value = sst.Get(key);
@@ -110,7 +110,7 @@ optional<int64_t> Database::Get(const int64_t &key) const {
 }
 
 vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &startKey, const int64_t &endKey) const {
-    cout << "Scan keys from " << startKey << " to " << endKey << endl;
+    LOG("Scan keys from " << startKey << " to " << endKey);
 
     vector<pair<int64_t, int64_t>> result;
     unordered_set<int64_t> found_keys;
@@ -124,7 +124,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &startKey, const int
 
     vector<pair<int64_t, int64_t>> values;
     for (const auto &entry: ssts) {
-        cout << "\tScan in " << entry.string() << endl;
+        LOG("\tScan in " << entry.string());
 
         const auto sst = SSTable(entry);
         const auto values = sst.Scan(startKey, endKey);
@@ -158,6 +158,6 @@ void Database::FlushToSst() {
         outfile.write(reinterpret_cast<const char *>(&value), sizeof(value));
     }
 
-    cout << "  Memtable flushed to SST: " << filename.str() << endl;
+    LOG("  Memtable flushed to SST: " << filename.str());
     outfile.close();
 }
