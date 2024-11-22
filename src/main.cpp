@@ -11,26 +11,26 @@ int main() {
     Database db(kMemtableSize);
 
     db.Open("db1");
-    // for (auto i = 1; i <= 5000; ++i) {
-    //     db.put(i, i * 10);
-    // }
-    // db.close();
-    //
-    // db.open("db1");
-    // for (auto i = 500; i <= 1000; ++i) {
-    //     db.put(i, i * 100);
-    // }
-    // db.close();
-    //
-    // db.open("db1");
-    // for (auto i = 400; i <= 600; ++i) {
-    //     db.put(i, i * 1000);
-    // }
-    // db.close();
+    for (auto i = 1; i <= 5000; ++i) {
+        db.Put(i, i * 10);
+    }
+    db.Close();
 
-    // for (auto i = 1; i <= 1024; ++i) {
-    //     db.put(i, -i * 10);
-    // }
+    db.Open("db1");
+    for (auto i = 500; i <= 1000; ++i) {
+        db.Put(i, i * 100);
+    }
+    db.Close();
+
+    db.Open("db1");
+    for (auto i = 400; i <= 600; ++i) {
+        db.Put(i, i * 1000);
+    }
+    db.Close();
+
+    for (auto i = 1; i <= 1024; ++i) {
+        db.Put(i, -i * 10);
+    }
 
 
     constexpr int64_t key = 1024;
@@ -42,14 +42,14 @@ int main() {
         LOG(" Key " << key << " not found");
     }
 
-    const auto res = db.Scan(1024, 4096);
-    // for (const auto &s: res) {
-    //     LOG(s.first << ": " << s.second);
-    // }
+    const auto res = db.Scan(250, 350);
+    for (const auto &s: res) {
+        LOG(s.first << ": " << s.second);
+    }
     // print the first and last pairs
-    LOG("Scan result: ");
-    LOG(" First pairs: " << res.front().first << ": " << res.front().second);
-    LOG(" Last pairs: " << res.back().first << ": " << res.back().second);
+    // LOG("Scan result: ");
+    // LOG(" First pairs: " << res.front().first << ": " << res.front().second);
+    // LOG(" Last pairs: " << res.back().first << ": " << res.back().second);
 
     db.Close();
 }

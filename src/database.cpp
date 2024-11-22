@@ -117,7 +117,13 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &startKey, const int
 
     // find in memtable
     vector<pair<int64_t, int64_t>> memtable_results = memtable_->Scan(startKey, endKey);
-    result.insert(result.end(), memtable_results.begin(), memtable_results.end());
+    // Update result and found_keys
+    for (const auto& [key, value] : memtable_results) {
+        if (found_keys.find(key) == found_keys.end()) {
+            result.emplace_back(key, value);
+            found_keys.insert(key);
+        }
+    }
 
     // find in SSTs from the newest to the oldest
     auto ssts = GetSortedSsts(db_name_);
@@ -128,7 +134,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &startKey, const int
 
         const auto sst = SSTable(entry);
         const auto values = sst.Scan(startKey, endKey);
-
+        // Update result and found_keys
         for (const auto &[key, value]: values) {
             if (!found_keys.contains(key)) {
                 result.emplace_back(key, value);
