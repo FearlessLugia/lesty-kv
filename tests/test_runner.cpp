@@ -12,8 +12,8 @@ using namespace std;
 
 int main() {
     vector<std::pair<TestBase *, string>> testClasses = {
-        make_pair(new TestBufferPool(), "TestBufferPool"),
-        // make_pair(new TestDb(), "TestDb")
+        // make_pair(new TestBufferPool(), "TestBufferPool"),
+        make_pair(new TestDb(), "TestDb")
     };
 
     bool allTestPassed = true;

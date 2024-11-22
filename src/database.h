@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "buffer_pool/buffer_pool.h"
 #include "memtable.h"
 #include "sstable.h"
 
@@ -17,28 +18,17 @@ namespace fs = std::filesystem;
 class Database {
     string db_name_;
     Memtable *memtable_;
+    BufferPool *buffer_pool_;
 
-    long sst_counter_;
+    int64_t sst_counter_;
     vector<SSTable> *sstables_;
-
-    // static off_t get_file_size(int fd);
-
-    // static optional<int64_t> binary_search_in_sst(const string &file_path, const int64_t &key);
 
     static vector<fs::path> GetSortedSsts(const string &path);
 
-    // static vector<pair<int64_t, int64_t> > scan_in_sst(const string &file_path,
-    // const int64_t &startKey, const int64_t &endKey);
-
 public:
-    explicit Database(const size_t memtable_size) : memtable_(nullptr) { memtable_ = new Memtable(memtable_size); }
+    explicit Database(const size_t memtable_size);
 
-    ~Database() {
-        delete memtable_;
-        // for (auto &sst: sstables_) {
-        //     sst.~SSTable();
-        // }
-    }
+    ~Database();
 
     void Open(const string &db_name);
 

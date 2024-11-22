@@ -11,26 +11,26 @@ int main() {
     Database db(kMemtableSize);
 
     db.Open("db1");
-    for (auto i = 1; i <= 5000; ++i) {
-        db.Put(i, i * 10);
-    }
-    db.Close();
-
-    db.Open("db1");
-    for (auto i = 500; i <= 1000; ++i) {
-        db.Put(i, i * 100);
-    }
-    db.Close();
-
-    db.Open("db1");
-    for (auto i = 400; i <= 600; ++i) {
-        db.Put(i, i * 1000);
-    }
-    db.Close();
-
-    for (auto i = 1; i <= 1024; ++i) {
-        db.Put(i, -i * 10);
-    }
+    // for (auto i = 1; i <= 5000; ++i) {
+    //     db.Put(i, i * 10);
+    // }
+    // db.Close();
+    //
+    // db.Open("db1");
+    // for (auto i = 500; i <= 1000; ++i) {
+    //     db.Put(i, i * 100);
+    // }
+    // db.Close();
+    //
+    // db.Open("db1");
+    // for (auto i = 400; i <= 600; ++i) {
+    //     db.Put(i, i * 1000);
+    // }
+    // db.Close();
+    //
+    // for (auto i = 1; i <= 1024; ++i) {
+    //     db.Put(i, -i * 10);
+    // }
 
 
     constexpr int64_t key = 1024;

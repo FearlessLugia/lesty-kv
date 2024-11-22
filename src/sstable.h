@@ -6,6 +6,9 @@
 #define SSTABLE_H
 #include <fstream>
 
+#include "buffer_pool/buffer_pool.h"
+#include "buffer_pool/page.h"
+
 using namespace std;
 class SSTable {
 public:
@@ -13,21 +16,18 @@ public:
     int fd_;
     off_t file_size_;
 
-    struct Entry {
-        int64_t key_;
-        int64_t value_;
-    };
-    vector<Entry> entries_;
+    vector<Page*> pages_;
 
     int64_t min_key_;
     int64_t max_key_;
 
+    BufferPool *buffer_pool_;
 
-    SSTable(const filesystem::path &file_path);
+
+    SSTable(const filesystem::path &file_path, BufferPool *buffer_pool);
     ~SSTable();
 
-    bool ReadEntry(const char *buffer, size_t buffer_size, size_t &pos, Entry &entry) const;
-    bool ReadPage(uint64_t offset, std::vector<Entry> &entries, int64_t first_key, int64_t last_key) const;
+    Page *GetPage(off_t offset) const;
 
     optional<int64_t> Get(const int64_t key) const;
     vector<pair<int64_t, int64_t>> Scan(const int64_t start_key, const int64_t end_key) const;
@@ -36,6 +36,8 @@ public:
 private:
     off_t GetFileSize() const;
     void InitialKeyRange();
+
+    bool ReadEntry(const char *buffer, size_t buffer_size, size_t &pos, pair<int64_t, int64_t> &entry) const;
 
     // Returns the offset of startKey or nullopt if not found
     optional<int64_t> BinarySearch(const int64_t key) const;

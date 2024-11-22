@@ -13,6 +13,21 @@
 #include "../utils/constants.h"
 #include "../utils/log.h"
 
+Database::Database(const size_t memtable_size) : memtable_(nullptr) {
+    memtable_ = new Memtable(memtable_size);
+    buffer_pool_ = new BufferPool(kBufferPoolSize);
+}
+
+Database::~Database() {
+    {
+        delete memtable_;
+        delete buffer_pool_;
+        // for (auto &sst: sstables_) {
+        //     sst.~SSTable();
+        // }
+    }
+}
+
 void Database::Open(const string &db_name) {
     db_name_ = db_name;
 
@@ -25,7 +40,7 @@ void Database::Open(const string &db_name) {
 
         // find the largest SST file number
         sst_counter_ = 0;
-        const regex filename_pattern(R"(sst_(\d+)\.bin)");
+        const regex filename_pattern(R"(sst(\d+)\.bin)");
         for (const auto &entry: filesystem::directory_iterator(db_name)) {
             string filename = entry.path().filename().string();
             smatch match;
@@ -41,7 +56,7 @@ void Database::Open(const string &db_name) {
 
 vector<fs::path> Database::GetSortedSsts(const string &path) {
     vector<filesystem::path> ssts;
-    const regex filename_pattern(R"(sst_(\d+)\.bin)");
+    const regex filename_pattern(R"(sst(\d+)\.bin)");
 
     for (const auto &entry: fs::directory_iterator(path)) {
         if (entry.is_regular_file() && regex_match(entry.path().filename().string(), filename_pattern)) {
@@ -99,7 +114,7 @@ optional<int64_t> Database::Get(const int64_t &key) const {
     for (const auto &entry: ssts) {
         LOG(" Get in " << entry.string());
 
-        const auto sst = SSTable(entry);
+        const auto sst = SSTable(entry, buffer_pool_);
         auto sst_value = sst.Get(key);
         if (sst_value.has_value()) {
             return sst_value;
@@ -118,7 +133,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &startKey, const int
     // find in memtable
     vector<pair<int64_t, int64_t>> memtable_results = memtable_->Scan(startKey, endKey);
     // Update result and found_keys
-    for (const auto& [key, value] : memtable_results) {
+    for (const auto &[key, value]: memtable_results) {
         if (found_keys.find(key) == found_keys.end()) {
             result.emplace_back(key, value);
             found_keys.insert(key);
@@ -132,7 +147,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &startKey, const int
     for (const auto &entry: ssts) {
         LOG("\tScan in " << entry.string());
 
-        const auto sst = SSTable(entry);
+        const auto sst = SSTable(entry, buffer_pool_);
         const auto values = sst.Scan(startKey, endKey);
         // Update result and found_keys
         for (const auto &[key, value]: values) {
@@ -151,7 +166,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &startKey, const int
 void Database::FlushToSst() {
     // Generate an increased-number-filename for the new SST file
     ostringstream filename;
-    filename << db_name_ << "/sst_" << sst_counter_++ << ".bin";
+    filename << db_name_ << "/sst" << sst_counter_++ << ".bin";
 
     ofstream outfile(filename.str(), ios::binary);
     if (!outfile) {

@@ -10,11 +10,13 @@
 #include <sys/fcntl.h>
 #include <unistd.h>
 
+#include "buffer_pool/page.h"
+
 
 using namespace std;
 
-SSTable::SSTable(const filesystem::path &file_path) {
-    file_path_ = file_path;
+SSTable::SSTable(const filesystem::path &file_path, BufferPool *buffer_pool) :
+    file_path_(file_path), buffer_pool_(buffer_pool) {
     fd_ = open(file_path.c_str(), O_RDONLY);
     if (fd_ < 0) {
         throw std::runtime_error("Failed to open SSTable file.");
@@ -33,7 +35,7 @@ SSTable::~SSTable() {
 off_t SSTable::GetFileSize() const {
     const off_t file_size = lseek(fd_, 0, SEEK_END);
     if (file_size == -1) {
-        cerr << "  Failed to determine file size: " << strerror(errno)<< endl;
+        cerr << "  Failed to determine file size: " << strerror(errno) << endl;
         return -1;
     }
     return file_size;
@@ -46,70 +48,76 @@ void SSTable::InitialKeyRange() {
     ssize_t bytes_read = pread(fd_, buffer, kPageSize, 0);
     if (bytes_read > 0) {
         size_t pos = 0;
-        Entry first_entry;
+        pair<int64_t, int64_t> first_entry;
         if (ReadEntry(buffer, bytes_read, pos, first_entry)) {
-            min_key_ = first_entry.key_;
+            min_key_ = first_entry.first;
         }
     }
 
     // Read the last block to get the maximum key
-    const uint64_t last_block_offset = file_size_ > kPageSize ? file_size_ - kPageSize : 0;
+    const off_t last_block_offset = file_size_ > kPageSize ? file_size_ - kPageSize : 0;
     bytes_read = pread(fd_, buffer, kPageSize, last_block_offset);
     if (bytes_read > 0) {
         size_t pos = 0;
-        Entry last_entry;
+        pair<int64_t, int64_t> last_entry;
         while (pos < static_cast<size_t>(bytes_read) && ReadEntry(buffer, bytes_read, pos, last_entry)) {
             // Keep reading to get the last entry in the block
         }
-        max_key_ = last_entry.key_;
+        max_key_ = last_entry.first;
     }
 }
 
-bool SSTable::ReadEntry(const char *buffer, const size_t buffer_size, size_t &pos, Entry &entry) const {
+bool SSTable::ReadEntry(const char *buffer, const size_t buffer_size, size_t &pos,
+                        pair<int64_t, int64_t> &entry) const {
     // Ensure there is enough space in the buffer for both key and value (2 x int64_t)
     if (pos + 2 * sizeof(int64_t) > buffer_size) {
         return false; // Not enough data left in the buffer
     }
 
     // Read key as int64_t
-    std::memcpy(&entry.key_, buffer + pos, sizeof(int64_t));
+    std::memcpy(&entry.first, buffer + pos, sizeof(int64_t));
     pos += sizeof(int64_t);
 
     // Read value as int64_t
-    std::memcpy(&entry.value_, buffer + pos, sizeof(int64_t));
+    std::memcpy(&entry.second, buffer + pos, sizeof(int64_t));
     pos += sizeof(int64_t);
 
     return true;
 }
 
-bool SSTable::ReadPage(uint64_t offset, vector<Entry> &entries, int64_t first_key, int64_t last_key) const {
-    char buffer[kPageSize];
+Page *SSTable::GetPage(off_t offset) const {
+    // concatenate the name of the file with the offset to get the page id
+    size_t start_pos = file_path_.find('/') + 1;
+    size_t end_pos = file_path_.rfind(".bin");
+    string sst_name= file_path_.substr(start_pos, end_pos - start_pos);
 
+    string page_id = sst_name + "_" + to_string(offset);
+
+    Page *exist_page = buffer_pool_->Get(page_id);
+    if (exist_page != nullptr) {
+        return exist_page;
+    }
+
+    // If the page is not in the buffer pool, read it from disk
+    char buffer[kPageSize];
     ssize_t bytes_read = pread(fd_, buffer, kPageSize, offset);
     if (bytes_read <= 0) {
-        return false;
+        LOG("\tCould not read page at offset " << offset << " in " << file_path_);
+        return nullptr;
     }
 
-    size_t buffer_size = static_cast<size_t>(bytes_read);
+    vector<int64_t> data;
     size_t pos = 0;
-    std::vector<Entry> block_entries;
-
-    while (pos < buffer_size) {
-        Entry entry;
-        if (!ReadEntry(buffer, buffer_size, pos, entry)) {
-            break;
-        }
-        block_entries.emplace_back(std::move(entry));
+    pair<int64_t, int64_t> entry;
+    while (ReadEntry(buffer, static_cast<size_t>(bytes_read), pos, entry)) {
+        data.push_back(entry.first);
+        data.push_back(entry.second);
     }
 
-    if (block_entries.empty()) {
-        return false;
-    }
+    buffer_pool_->Put(page_id, data);
 
-    first_key = block_entries.front().key_;
-    last_key = block_entries.back().key_;
-    entries = std::move(block_entries);
-    return true;
+    Page *new_page = new Page(page_id, data);
+    return new_page;
 }
 
 optional<int64_t> SSTable::Get(const int64_t key) const {
@@ -134,28 +142,22 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
         const size_t mid = left + (right - left) / 2;
         const off_t offset = mid * kPageSize;
 
-        vector<char> page(kPageSize);
-        ssize_t bytes_read = pread(fd_, page.data(), kPageSize, offset);
-        if (bytes_read < 0) {
-            LOG("\tCould not find key " << key << " in " << file_path_);
-            return nullopt;
-        }
+        const Page * page = GetPage(offset);
+        const auto data = page->data_;
+        const size_t num_pairs = page->GetSize() / 2;
 
-        const size_t num_pairs = bytes_read / kPairSize;
-
-        const int64_t *kv_pairs = reinterpret_cast<const int64_t *>(page.data());
-        const int64_t first_key = kv_pairs[0];
-        const int64_t last_key = kv_pairs[(num_pairs - 1) * 2];
+        const int64_t first_key = data[0];
+        const int64_t last_key = data[(num_pairs - 1) * 2];
 
         if (key == first_key) {
             ::close(fd_);
             LOG("\t\tFound key " << key << " in " << file_path_);
-            return kv_pairs[1];
+            return data[1];
         }
         if (key == last_key) {
             ::close(fd_);
             LOG("\t\tFound key " << key << " in " << file_path_);
-            return kv_pairs[num_pairs * 2 - 1];
+            return data[num_pairs * 2 - 1];
         }
 
         if (key > first_key && key < last_key) {
@@ -165,12 +167,12 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
 
             while (page_left <= page_right) {
                 const size_t page_mid = page_left + (page_right - page_left) / 2;
-                const int64_t mid_key = kv_pairs[page_mid * 2];
+                const int64_t mid_key = data[page_mid * 2];
 
                 if (mid_key == key) {
                     ::close(fd_);
                     LOG("\t\tFound key " << key << " in " << file_path_);
-                    return kv_pairs[page_mid * 2 + 1];
+                    return data[page_mid * 2 + 1];
                 }
 
                 if (mid_key < key) {
@@ -210,8 +212,7 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
     int64_t start_offset;
     if (min_key_ > start_key) {
         // min key is larger than end key, scan from the beginning
-        LOG("\t\tmin key " << min_key_ << " is larger than start key " << start_key << ", scan from the beginning"
-            );
+        LOG("\t\tmin key " << min_key_ << " is larger than start key " << start_key << ", scan from the beginning");
 
         start_offset = 0;
     } else {
@@ -242,16 +243,11 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key) const {
         const size_t mid = left + (right - left) / 2;
         const off_t offset = mid * kPageSize;
 
-        vector<char> page(kPageSize);
-        ssize_t bytes_read = pread(fd_, page.data(), kPageSize, offset);
-        if (bytes_read < 0) {
-            LOG("\tCould not read page at offset " << offset << " in " << file_path_);
-            return -1;
-        }
+        const Page * page = GetPage(offset);
+        const auto data = page->data_;
+        const size_t num_pairs = page->GetSize() / 2;
 
-        const size_t num_pairs = bytes_read / kPairSize;
-        const int64_t *kv_pairs = reinterpret_cast<const int64_t *>(page.data());
-        const int64_t first_key = kv_pairs[0];
+        const int64_t first_key = data[0];
 
         if (first_key <= key) {
             left = mid + 1;
@@ -329,13 +325,13 @@ vector<pair<int64_t, int64_t>> SSTable::LinearSearchToEndKey(off_t start_offset,
         }
 
         size_t pos = 0;
-        Entry entry;
+        pair<int64_t, int64_t> entry;
         while (pos < static_cast<size_t>(bytes_read) && ReadEntry(buffer, bytes_read, pos, entry)) {
-            if (entry.key_ > end_key) {
+            if (entry.first > end_key) {
                 return result;
             }
 
-            result.emplace_back(entry.key_, entry.value_);
+            result.emplace_back(entry.first, entry.second);
         }
 
         current_offset += kPageSize;
