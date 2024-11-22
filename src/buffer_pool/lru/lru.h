@@ -26,13 +26,14 @@ public:
 
     explicit LRU(size_t capacity);
     ~LRU();
+
     void MoveToTail(QueueNode *node);
 
     bool Update(Page *page);
 
-    void Put(int64_t key, Page *page);
+    void Put(int64_t key, Page *page) override;
 
-    void Evict();
+    void Evict() override;
 
     void Clear();
 };

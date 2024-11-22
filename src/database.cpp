@@ -124,14 +124,14 @@ optional<int64_t> Database::Get(const int64_t &key) const {
     return nullopt;
 }
 
-vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &startKey, const int64_t &endKey) const {
-    LOG("Scan keys from " << startKey << " to " << endKey);
+vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &start_key, const int64_t &end_key) const {
+    LOG("Scan keys from " << start_key << " to " << end_key);
 
     vector<pair<int64_t, int64_t>> result;
     unordered_set<int64_t> found_keys;
 
     // find in memtable
-    vector<pair<int64_t, int64_t>> memtable_results = memtable_->Scan(startKey, endKey);
+    vector<pair<int64_t, int64_t>> memtable_results = memtable_->Scan(start_key, end_key);
     // Update result and found_keys
     for (const auto &[key, value]: memtable_results) {
         if (found_keys.find(key) == found_keys.end()) {
@@ -148,7 +148,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &startKey, const int
         LOG("\tScan in " << entry.string());
 
         const auto sst = SSTable(entry, buffer_pool_);
-        const auto values = sst.Scan(startKey, endKey);
+        const auto values = sst.Scan(start_key, end_key);
         // Update result and found_keys
         for (const auto &[key, value]: values) {
             if (!found_keys.contains(key)) {

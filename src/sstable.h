@@ -27,7 +27,7 @@ public:
     SSTable(const filesystem::path &file_path, BufferPool *buffer_pool);
     ~SSTable();
 
-    Page *GetPage(off_t offset) const;
+    Page *GetPage(off_t offset, bool is_sequential_flooding) const;
 
     optional<int64_t> Get(const int64_t key) const;
     vector<pair<int64_t, int64_t>> Scan(const int64_t start_key, const int64_t end_key) const;
@@ -43,7 +43,7 @@ private:
     optional<int64_t> BinarySearch(const int64_t key) const;
 
     // Returns the offset of startKey or its upper bound if not found
-    int64_t BinarySearchUpperbound(const int64_t key) const;
+    int64_t BinarySearchUpperbound(const int64_t key, bool is_sequential_flooding) const;
 
     vector<pair<int64_t, int64_t>> LinearSearchToEndKey(off_t start_offset, int64_t end_key) const;
 };

@@ -38,7 +38,7 @@ public:
 
     optional<int64_t> Get(const int64_t &key) const;
 
-    vector<pair<int64_t, int64_t>> Scan(const int64_t &startKey, const int64_t &endKey) const;
+    vector<pair<int64_t, int64_t>> Scan(const int64_t &start_key, const int64_t &end_key) const;
 
     void FlushToSst();
 };

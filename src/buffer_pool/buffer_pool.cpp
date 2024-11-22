@@ -49,7 +49,7 @@ Page *BufferPool::FindPage(const string &id) const {
     return nullptr;
 }
 
-Page *BufferPool::Get(const string &page_id) {
+Page *BufferPool::Get(const string &page_id) const {
     const auto page = FindPage(page_id);
     if (page) {
         LOG("  Page " << page_id << " hit in buffer pool");

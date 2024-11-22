@@ -33,7 +33,7 @@ public:
     ~BufferPool();
 
 
-    Page *Get(const string &id);
+    Page *Get(const string &id) const;
 
     Page *Put(const string &id, const vector<int64_t> &data);
 

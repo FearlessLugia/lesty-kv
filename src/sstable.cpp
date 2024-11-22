@@ -85,11 +85,11 @@ bool SSTable::ReadEntry(const char *buffer, const size_t buffer_size, size_t &po
     return true;
 }
 
-Page *SSTable::GetPage(off_t offset) const {
+Page *SSTable::GetPage(off_t offset, bool is_sequential_flooding = false) const {
     // concatenate the name of the file with the offset to get the page id
     size_t start_pos = file_path_.find('/') + 1;
     size_t end_pos = file_path_.rfind(".bin");
-    string sst_name= file_path_.substr(start_pos, end_pos - start_pos);
+    string sst_name = file_path_.substr(start_pos, end_pos - start_pos);
 
     string page_id = sst_name + "_" + to_string(offset);
 
@@ -100,7 +100,7 @@ Page *SSTable::GetPage(off_t offset) const {
 
     // If the page is not in the buffer pool, read it from disk
     char buffer[kPageSize];
-    ssize_t bytes_read = pread(fd_, buffer, kPageSize, offset);
+    const ssize_t bytes_read = pread(fd_, buffer, kPageSize, offset);
     if (bytes_read <= 0) {
         LOG("\tCould not read page at offset " << offset << " in " << file_path_);
         return nullptr;
@@ -114,18 +114,20 @@ Page *SSTable::GetPage(off_t offset) const {
         data.push_back(entry.second);
     }
 
-    buffer_pool_->Put(page_id, data);
+    // if not sequential flooding, put the page into the buffer pool
+    if (!is_sequential_flooding) {
+        buffer_pool_->Put(page_id, data);
+    }
 
     Page *new_page = new Page(page_id, data);
     return new_page;
 }
 
 optional<int64_t> SSTable::Get(const int64_t key) const {
-    // max key is smaller than key, no need to scan
-    // min key is larger than key, no need to scan
+    // if max key is smaller than key, no need to scan
+    // if min key is larger than key, no need to scan
     if (max_key_ < key || min_key_ > key) {
         LOG("\t\tno value in this sst");
-
         return nullopt;
     }
 
@@ -142,7 +144,7 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
         const size_t mid = left + (right - left) / 2;
         const off_t offset = mid * kPageSize;
 
-        const Page * page = GetPage(offset);
+        const Page *page = GetPage(offset);
         const auto data = page->data_;
         const size_t num_pairs = page->GetSize() / 2;
 
@@ -212,14 +214,19 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
     int64_t start_offset;
     if (min_key_ > start_key) {
         // min key is larger than end key, scan from the beginning
-        LOG("\t\tmin key " << min_key_ << " is larger than start key " << start_key << ", scan from the beginning");
+        LOG("\t\tMin key " << min_key_ << " is larger than start key " << start_key << ", scan from the beginning");
 
         start_offset = 0;
     } else {
+        const bool is_sequential_flooding = (end_key - start_key + 1) / kPagePairs >= kPageSequentialFlooding;
+        if (is_sequential_flooding) {
+            LOG("  Scan range exceeds sequential flooding threshold, skipping buffer pool writes");
+        };
+
         // else, binary search to find the upper bound of the start key
-        start_offset = BinarySearchUpperbound(start_key);
+        start_offset = BinarySearchUpperbound(start_key, is_sequential_flooding);
     }
-    LOG("\t\t\tstart offset: " << start_offset);
+    LOG("\t\t\tStart offset: " << start_offset);
 
 
     // Found start key, linear search to find end key
@@ -232,7 +239,7 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
     return result;
 }
 
-int64_t SSTable::BinarySearchUpperbound(const int64_t key) const {
+int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_flooding = false) const {
     const size_t num_pages = (file_size_ + kPageSize - 1) / kPageSize;
 
     size_t left = 0;
@@ -243,7 +250,7 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key) const {
         const size_t mid = left + (right - left) / 2;
         const off_t offset = mid * kPageSize;
 
-        const Page * page = GetPage(offset);
+        const Page *page = GetPage(offset);
         const auto data = page->data_;
         const size_t num_pairs = page->GetSize() / 2;
 
@@ -265,16 +272,12 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key) const {
     const size_t page_index = left - 1;
     const off_t page_offset = page_index * kPageSize;
 
-    vector<char> page(kPageSize);
-    ssize_t bytes_read = pread(fd_, page.data(), kPageSize, page_offset);
-    if (bytes_read < 0) {
-        LOG("\tCould not read page at offset " << page_offset << " in " << file_path_);
-        return -1;
-    }
+    const Page *page = GetPage(page_offset);
+    const auto data = page->data_;
+    const size_t num_pairs = page->GetSize() / 2;
 
-    const size_t num_pairs = bytes_read / kPairSize;
-    const int64_t *kv_pairs = reinterpret_cast<const int64_t *>(page.data());
-    const int64_t first_key = kv_pairs[0];
+    const int64_t first_key = data[0];
+    const int64_t last_key = data[(num_pairs - 1) * 2];
 
     // Inner binary search to find the upper bound within the page
     size_t page_left = 0;
@@ -282,7 +285,7 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key) const {
 
     while (page_left < page_right) {
         const size_t page_mid = page_left + (page_right - page_left) / 2;
-        const int64_t mid_key = kv_pairs[page_mid * 2];
+        const int64_t mid_key = data[page_mid * 2];
 
         if (mid_key <= key) {
             page_left = page_mid + 1;
