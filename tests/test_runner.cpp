@@ -11,14 +11,13 @@
 using namespace std;
 
 int main() {
-    cout << endl << "Running tests..." << endl;
-
-    bool allTestPassed = true;
     vector<std::pair<TestBase *, string>> testClasses = {
         make_pair(new TestBufferPool(), "TestBufferPool"),
         // make_pair(new TestDb(), "TestDb")
     };
 
+    bool allTestPassed = true;
+    cout << endl << "Running tests..." << endl;
     for (auto [testClass, name]: testClasses) {
         cout << "Running " << name << endl;
         allTestPassed &= testClass->RunTests();

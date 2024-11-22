@@ -16,16 +16,18 @@ add_library(kv-lib src/memtable.cpp
         src/database.cpp
         src/database.h
         src/sstable.cpp
-        src/buffer_pool/buffer_pool.cpp
-        src/buffer_pool/buffer_pool.h
         utils/constants.h
         external/MurmurHash3.cpp
         external/MurmurHash3.h
         utils/log.h
-        src/buffer_pool/lru.cpp
-        src/buffer_pool/lru.h
-        src/buffer_pool/eviction_policy.cpp
-        src/buffer_pool/eviction_policy.h
+        src/buffer_pool/buffer_pool.cpp
+        src/buffer_pool/buffer_pool.h
+        src/buffer_pool/Page.h
+        src/buffer_pool/lru/lru.cpp
+        src/buffer_pool/lru/lru.h
+        src/buffer_pool/lru/eviction_policy.h
+        src/buffer_pool/lru/queue_node.h
+        src/buffer_pool/bucket_node.h
 )
 
 add_executable(kv-test
