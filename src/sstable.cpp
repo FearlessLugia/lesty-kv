@@ -319,22 +319,17 @@ vector<pair<int64_t, int64_t>> SSTable::LinearSearchToEndKey(off_t start_offset,
 
     auto current_offset = start_offset;
 
-    char buffer[kPageSize];
-
     while (true) {
-        const ssize_t bytes_read = pread(fd_, buffer, kPageSize, current_offset);
-        if (bytes_read <= 0) {
-            return result;
-        }
+        const Page *page = GetPage(current_offset);
+        const auto data = page->data_;
+        const size_t num_pairs = page->GetSize() / 2;
 
-        size_t pos = 0;
-        pair<int64_t, int64_t> entry;
-        while (pos < static_cast<size_t>(bytes_read) && ReadEntry(buffer, bytes_read, pos, entry)) {
-            if (entry.first > end_key) {
+        for (size_t i = 0; i < num_pairs; i++) {
+            if (data[i * 2] > end_key) {
                 return result;
             }
 
-            result.emplace_back(entry.first, entry.second);
+            result.emplace_back(data[i * 2], data[i * 2 + 1]);
         }
 
         current_offset += kPageSize;
