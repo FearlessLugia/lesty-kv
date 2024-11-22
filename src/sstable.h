@@ -21,10 +21,7 @@ public:
     int64_t min_key_;
     int64_t max_key_;
 
-    BufferPool *buffer_pool_;
-
-
-    SSTable(const filesystem::path &file_path, BufferPool *buffer_pool);
+    SSTable(const filesystem::path &file_path);
     ~SSTable();
 
     Page *GetPage(off_t offset, bool is_sequential_flooding) const;

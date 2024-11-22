@@ -10,13 +10,13 @@
 #include <sys/fcntl.h>
 #include <unistd.h>
 
+#include "buffer_pool/buffer_pool_manager.h"
 #include "buffer_pool/page.h"
 
 
 using namespace std;
 
-SSTable::SSTable(const filesystem::path &file_path, BufferPool *buffer_pool) :
-    file_path_(file_path), buffer_pool_(buffer_pool) {
+SSTable::SSTable(const filesystem::path &file_path) : file_path_(file_path) {
     fd_ = open(file_path.c_str(), O_RDONLY);
     if (fd_ < 0) {
         throw std::runtime_error("Failed to open SSTable file.");
@@ -41,6 +41,7 @@ off_t SSTable::GetFileSize() const {
     return file_size;
 }
 
+// update min key and max key of the SSTable
 void SSTable::InitialKeyRange() {
     char buffer[kPageSize];
 
@@ -75,11 +76,11 @@ bool SSTable::ReadEntry(const char *buffer, const size_t buffer_size, size_t &po
     }
 
     // Read key as int64_t
-    std::memcpy(&entry.first, buffer + pos, sizeof(int64_t));
+    memcpy(&entry.first, buffer + pos, sizeof(int64_t));
     pos += sizeof(int64_t);
 
     // Read value as int64_t
-    std::memcpy(&entry.second, buffer + pos, sizeof(int64_t));
+    memcpy(&entry.second, buffer + pos, sizeof(int64_t));
     pos += sizeof(int64_t);
 
     return true;
@@ -93,7 +94,8 @@ Page *SSTable::GetPage(off_t offset, bool is_sequential_flooding = false) const 
 
     string page_id = sst_name + "_" + to_string(offset);
 
-    Page *exist_page = buffer_pool_->Get(page_id);
+    auto buffer_pool = BufferPoolManager::GetInstance();
+    Page *exist_page = buffer_pool->Get(page_id);
     if (exist_page != nullptr) {
         return exist_page;
     }
@@ -116,7 +118,8 @@ Page *SSTable::GetPage(off_t offset, bool is_sequential_flooding = false) const 
 
     // if not sequential flooding, put the page into the buffer pool
     if (!is_sequential_flooding) {
-        buffer_pool_->Put(page_id, data);
+        auto buffer_pool = BufferPoolManager::GetInstance();
+        buffer_pool->Put(page_id, data);
     }
 
     Page *new_page = new Page(page_id, data);
