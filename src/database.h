@@ -44,7 +44,7 @@ public:
 
     void FlushToSst();
     void FlushToBTreeSst();
-    vector<fs::path> GetSortedBTreeSsts(const string &path);
+    // vector<fs::path> GetSortedBTreeSsts(const string &path);
 };
 
 #endif // DATABASE_H

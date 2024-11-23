@@ -75,9 +75,6 @@ void BTreeSSTable::FlushFromMemtable(const vector<int64_t> *data) {
 
         string page_id = sst_name + "_" + to_string(offset);
         for (size_t j = offset * 2 / kPairSize; j < offset * 2 / kPairSize + kPagePairs * 2 && j < data->size(); j++) {
-            if ((*data)[j] == 5000) {
-                int a = 1;
-            }
             page_data.push_back((*data)[j]);
         }
         LOG("    Current page size: " << page_data.size());

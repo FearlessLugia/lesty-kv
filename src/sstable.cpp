@@ -87,7 +87,7 @@ bool SSTable::ReadEntry(const char *buffer, const size_t buffer_size, size_t &po
 }
 
 Page *SSTable::GetPage(off_t offset, bool is_sequential_flooding = false) const {
-    // concatenate the name of the file with the offset to get the page id
+    // Concatenate the name of the file with the offset to get the page id
     const size_t start_pos = file_path_.find('/') + 1;
     const size_t end_pos = file_path_.rfind(".bin");
     const string sst_name = file_path_.substr(start_pos, end_pos - start_pos);
@@ -102,7 +102,9 @@ Page *SSTable::GetPage(off_t offset, bool is_sequential_flooding = false) const 
 
     // If the page is not in the buffer pool, read it from disk
     char buffer[kPageSize];
-    const ssize_t bytes_read = pread(fd_, buffer, kPageSize, offset);
+    // Align the offset to the beginning of the page
+    const off_t aligned_offset = offset & ~static_cast<off_t>(kPagePairs - 1);
+    const ssize_t bytes_read = pread(fd_, buffer, kPageSize, aligned_offset);
     if (bytes_read <= 0) {
         LOG("\tCould not read page at offset " << offset << " in " << file_path_);
         return nullptr;
@@ -233,7 +235,7 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
 
 
     // Found start key, linear search to find end key
-    const auto values = LinearSearchToEndKey(start_offset, end_key);
+    const auto values = LinearSearchToEndKey(start_offset, start_key, end_key);
     for (const auto &[key, value]: values) {
         result.emplace_back(key, value);
     }
@@ -317,13 +319,20 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
     return key_offset;
 }
 
-vector<pair<int64_t, int64_t>> SSTable::LinearSearchToEndKey(off_t start_offset, int64_t end_key) const {
+vector<pair<int64_t, int64_t>> SSTable::LinearSearchToEndKey(off_t start_offset, int64_t start_key,
+                                                             int64_t end_key) const {
     vector<pair<int64_t, int64_t>> result;
 
     auto current_offset = start_offset;
 
     while (true) {
         const Page *page = GetPage(current_offset);
+
+        // When start key is the last key in the SSTable, next page will be nullptr
+        if (page == nullptr) {
+            return result;
+        }
+
         const auto data = page->data_;
         const size_t num_pairs = page->GetSize() / 2;
 
@@ -332,7 +341,9 @@ vector<pair<int64_t, int64_t>> SSTable::LinearSearchToEndKey(off_t start_offset,
                 return result;
             }
 
-            result.emplace_back(data[i * 2], data[i * 2 + 1]);
+            if (data[i * 2] >= start_key) {
+                result.emplace_back(data[i * 2], data[i * 2 + 1]);
+            }
         }
 
         current_offset += kPageSize;

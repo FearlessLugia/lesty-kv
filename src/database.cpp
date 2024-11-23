@@ -46,7 +46,7 @@ void Database::Open(const string &db_name) {
             string filename = entry.path().filename().string();
             smatch match;
             if (regex_match(filename, match, filename_pattern)) {
-                const long file_counter = stol(match[1].str());
+                const int64_t file_counter = stol(match[1].str());
                 if (file_counter >= sst_counter_) {
                     sst_counter_ = file_counter + 1; // set the next number
                 }
@@ -59,7 +59,7 @@ vector<fs::path> Database::GetSortedSsts(const string &path, bool is_b_tree = tr
     vector<filesystem::path> ssts;
     regex filename_pattern;
     if (is_b_tree) {
-        filename_pattern = R"(bin(\d+)\.bin)";
+        filename_pattern = R"(btree(\d+)\.bin)";
     } else {
         filename_pattern = R"(sst(\d+)\.bin)";
     }
@@ -80,25 +80,25 @@ vector<fs::path> Database::GetSortedSsts(const string &path, bool is_b_tree = tr
     return ssts;
 }
 
-vector<fs::path> Database::GetSortedBTreeSsts(const string &path) {
-    vector<filesystem::path> ssts;
-    const regex filename_pattern(R"(btree(\d+)\.bin)");
-
-    for (const auto &entry: fs::directory_iterator(path)) {
-        if (entry.is_regular_file() && regex_match(entry.path().filename().string(), filename_pattern)) {
-            ssts.push_back(entry.path());
-        }
-    }
-
-    ranges::sort(ssts, [](const fs::path &a, const fs::path &b) {
-        auto time_a = fs::last_write_time(a);
-        auto time_b = fs::last_write_time(b);
-
-        return time_a > time_b;
-    });
-
-    return ssts;
-}
+// vector<fs::path> Database::GetSortedBTreeSsts(const string &path) {
+//     vector<filesystem::path> ssts;
+//     const regex filename_pattern(R"(btree(\d+)\.bin)");
+//
+//     for (const auto &entry: fs::directory_iterator(path)) {
+//         if (entry.is_regular_file() && regex_match(entry.path().filename().string(), filename_pattern)) {
+//             ssts.push_back(entry.path());
+//         }
+//     }
+//
+//     ranges::sort(ssts, [](const fs::path &a, const fs::path &b) {
+//         auto time_a = fs::last_write_time(a);
+//         auto time_b = fs::last_write_time(b);
+//
+//         return time_a > time_b;
+//     });
+//
+//     return ssts;
+// }
 
 void Database::Close() {
     if (memtable_->Size() > 0) {
@@ -160,7 +160,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &start_key, const in
     vector<pair<int64_t, int64_t>> memtable_results = memtable_->Scan(start_key, end_key);
     // Update result and found_keys
     for (const auto &[key, value]: memtable_results) {
-        if (found_keys.find(key) == found_keys.end()) {
+        if (!found_keys.contains(key)) {
             result.emplace_back(key, value);
             found_keys.insert(key);
         }
