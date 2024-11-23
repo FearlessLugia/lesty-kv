@@ -21,9 +21,11 @@ class Database {
     BufferPool *buffer_pool_;
 
     int64_t sst_counter_;
-    vector<SSTable> *sstables_;
+    // vector<SSTable> *sstables_;
 
-    static vector<fs::path> GetSortedSsts(const string &path);
+    vector<fs::path> sstables_;
+
+    static vector<fs::path> GetSortedSsts(const string &path, bool is_b_tree);
 
 public:
     explicit Database(const size_t memtable_size);
@@ -41,6 +43,8 @@ public:
     vector<pair<int64_t, int64_t>> Scan(const int64_t &start_key, const int64_t &end_key) const;
 
     void FlushToSst();
+    void FlushToBTreeSst();
+    vector<fs::path> GetSortedBTreeSsts(const string &path);
 };
 
 #endif // DATABASE_H

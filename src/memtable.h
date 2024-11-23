@@ -25,7 +25,8 @@ public:
 
     vector<pair<int64_t, int64_t> > Scan(const int64_t &startKey, const int64_t &endKey) const;
 
-    vector<pair<int64_t, int64_t> > Traverse() const;
+    vector<pair<int64_t, int64_t>> TraversePair() const;
+    vector<int64_t> Traverse() const;
 
     void clear();
 

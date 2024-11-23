@@ -88,9 +88,9 @@ bool SSTable::ReadEntry(const char *buffer, const size_t buffer_size, size_t &po
 
 Page *SSTable::GetPage(off_t offset, bool is_sequential_flooding = false) const {
     // concatenate the name of the file with the offset to get the page id
-    size_t start_pos = file_path_.find('/') + 1;
-    size_t end_pos = file_path_.rfind(".bin");
-    string sst_name = file_path_.substr(start_pos, end_pos - start_pos);
+    const size_t start_pos = file_path_.find('/') + 1;
+    const size_t end_pos = file_path_.rfind(".bin");
+    const string sst_name = file_path_.substr(start_pos, end_pos - start_pos);
 
     string page_id = sst_name + "_" + to_string(offset);
 

@@ -16,12 +16,13 @@ public:
     int fd_;
     off_t file_size_;
 
-    vector<Page*> pages_;
+    vector<Page *> pages_;
 
     int64_t min_key_;
     int64_t max_key_;
 
     SSTable(const filesystem::path &file_path);
+    SSTable() = default;
     ~SSTable();
 
     Page *GetPage(off_t offset, bool is_sequential_flooding) const;

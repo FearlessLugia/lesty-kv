@@ -15,26 +15,31 @@ add_library(kv-lib src/memtable.cpp
         src/sstable.h
         src/database.cpp
         src/database.h
-        src/sstable.cpp
         utils/constants.h
+        utils/log.h
         external/MurmurHash3.cpp
         external/MurmurHash3.h
-        utils/log.h
+        src/buffer_pool/Page.h
+        src/buffer_pool/bucket_node.h
         src/buffer_pool/buffer_pool.cpp
         src/buffer_pool/buffer_pool.h
-        src/buffer_pool/Page.h
+        src/buffer_pool/buffer_pool_manager.h
+        src/buffer_pool/directory.cpp
+        src/buffer_pool/directory.h
+        src/buffer_pool/lru/queue_node.h
+        src/buffer_pool/lru/eviction_policy.h
         src/buffer_pool/lru/lru.cpp
         src/buffer_pool/lru/lru.h
-        src/buffer_pool/lru/eviction_policy.h
-        src/buffer_pool/lru/queue_node.h
-        src/buffer_pool/bucket_node.h
+        src/b_tree/b_tree_sstable.cpp
+        src/b_tree/b_tree_sstable.h
 )
 
 add_executable(kv-test
         tests/test_base.h
-        tests/test_buffer_pool.cpp
         tests/test_runner.cpp
-        tests/test_db.cpp)
+        tests/test_db.cpp
+        tests/test_buffer_pool.cpp
+        tests/test_b_tree.cpp)
 
 
 target_link_libraries(kv PUBLIC kv-lib)

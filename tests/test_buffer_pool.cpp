@@ -26,9 +26,9 @@ class TestBufferPool : public TestBase {
         bufferPool->Put(page3_id, page3_data);
 
         // Check if the data are in the same address
-        assert(bufferPool->Get("test1_128")->data_ == &page1_data);
-        assert(bufferPool->Get("test2_128")->data_ == &page2_data);
-        assert(bufferPool->Get("test1_256")->data_ == &page3_data);
+        assert(bufferPool->Get("test1_128")->data_ == page1_data);
+        assert(bufferPool->Get("test2_128")->data_ == page2_data);
+        assert(bufferPool->Get("test1_256")->data_ == page3_data);
 
         return true;
     }
