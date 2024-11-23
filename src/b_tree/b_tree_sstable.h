@@ -13,11 +13,13 @@ class BTreeSSTable : public SSTable {
 public:
     BTreeSSTable(const filesystem::path &path);
 
-    bool WriteEntry(char *buffer, const size_t buffer_size, size_t &pos, pair<int64_t, int64_t> &entry);
+    // bool WriteEntry(char *buffer, const size_t buffer_size, size_t &pos, pair<int64_t, int64_t> &entry);
 
     void WritePage(const off_t offset, const Page *page) const;
 
     void FlushFromMemtable(const vector<int64_t> *data);
+
+    pair<vector<int64_t>, vector<vector<int64_t>>> GenerateBTreeLayers(vector<int64_t> prev_layer_nodes);
 };
 
 
