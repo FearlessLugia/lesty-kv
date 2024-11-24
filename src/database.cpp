@@ -150,7 +150,7 @@ optional<int64_t> Database::Get(const int64_t &key) const {
     return nullopt;
 }
 
-vector<pair<int64_t, int64_t>> Database::Scan(const int64_t &start_key, const int64_t &end_key) const {
+vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int64_t end_key) const {
     LOG("Scan keys from " << start_key << " to " << end_key);
 
     vector<pair<int64_t, int64_t>> result;

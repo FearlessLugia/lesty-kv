@@ -5,6 +5,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+//------------ Page ------------
 
 // int64_t occupies 8 Bytes
 inline constexpr size_t kPairSize = 2 * sizeof(int64_t); // 16 Bytes
@@ -16,6 +17,8 @@ inline constexpr size_t kPageSize = 4096; // 4KB
 inline constexpr size_t kPagePairs = kPageSize / kPairSize; // 256
 
 
+//------------ Memtable ------------
+
 // let 1 memtable contain 8 pages
 inline constexpr size_t kPageNum = 8;
 
@@ -23,6 +26,8 @@ inline constexpr size_t kPageNum = 8;
 // 1 memtable contains 2048 * 16 = 32KB
 inline constexpr size_t kMemtableSize = kPageSize * kPageNum; // 32KB
 
+
+//------------ Buffer Pool ------------
 
 // 1 buffer pool occupies 32KB
 // 1 buffer pool contains 32KB / 4KB = 8 pages
@@ -34,12 +39,25 @@ inline constexpr size_t kBufferPoolSize = kMemtableSize; // 32KB
 // inline constexpr size_t kBufferPoolSize = 1024 * 1024; // 1MB
 
 
-// when buffer pool reaches 80% of its capacity, it will evict some pages
+// When buffer pool reaches 80% of its capacity, it will evict some pages
 inline constexpr double kCoeffBufferPool = 0.8;
 
-// when the key range of a scan covers over 0.25 * 8 = 2 pages, apply sequential flooding
+// When the key range of a scan covers over 0.25 * 8 = 2 pages, apply sequential flooding
 // The pages covered during this scan will not be put into buffer pool
 inline constexpr double kCoeffSequentialFlooding = 0.25;
 inline constexpr double kPageSequentialFlooding = kCoeffSequentialFlooding * kPageNum;
+
+
+//------------ B-Tree SSTable ------------
+
+// // Number of children per root node in B-Tree
+// inline constexpr size_t kNumChildrenPerRoot = 2;
+//
+// // Number of children per internal node in B-Tree
+// inline constexpr size_t kNumChildrenPerInternal = 4;
+
+// Number of pages reserved for the first 2 layers nodes in B-Tree
+inline constexpr size_t kPageNumReserveBTree = 1 + 2;
+
 
 #endif // CONSTANTS_H

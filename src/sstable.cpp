@@ -86,7 +86,7 @@ bool SSTable::ReadEntry(const char *buffer, const size_t buffer_size, size_t &po
     return true;
 }
 
-Page *SSTable::GetPage(off_t offset, bool is_sequential_flooding = false) const {
+Page *SSTable::GetPage(off_t offset, const bool is_sequential_flooding = false) const {
     // Concatenate the name of the file with the offset to get the page id
     const size_t start_pos = file_path_.find('/') + 1;
     const size_t end_pos = file_path_.rfind(".bin");
@@ -216,14 +216,15 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
         return result;
     }
 
+    const bool is_sequential_flooding = (end_key - start_key + 1) / kPagePairs >= kPageSequentialFlooding;
+
     int64_t start_offset;
     if (min_key_ > start_key) {
         // min key is larger than end key, scan from the beginning
         LOG("\t\tMin key " << min_key_ << " is larger than start key " << start_key << ", scan from the beginning");
 
-        start_offset = 0;
+        start_offset = kPageNumReserveBTree * kPageSize;
     } else {
-        const bool is_sequential_flooding = (end_key - start_key + 1) / kPagePairs >= kPageSequentialFlooding;
         if (is_sequential_flooding) {
             LOG("  Scan range exceeds sequential flooding threshold, skipping buffer pool writes");
         };
@@ -235,7 +236,7 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
 
 
     // Found start key, linear search to find end key
-    const auto values = LinearSearchToEndKey(start_offset, start_key, end_key);
+    const auto values = LinearSearchToEndKey(start_offset, start_key, end_key, is_sequential_flooding);
     for (const auto &[key, value]: values) {
         result.emplace_back(key, value);
     }
@@ -255,7 +256,7 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
         const size_t mid = left + (right - left) / 2;
         const off_t offset = mid * kPageSize;
 
-        const Page *page = GetPage(offset);
+        const Page *page = GetPage(offset, is_sequential_flooding);
         const auto data = page->data_;
         const size_t num_pairs = page->GetSize() / 2;
 
@@ -277,7 +278,7 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
     const size_t page_index = left - 1;
     const off_t page_offset = page_index * kPageSize;
 
-    const Page *page = GetPage(page_offset);
+    const Page *page = GetPage(page_offset, is_sequential_flooding);
     const auto data = page->data_;
     const size_t num_pairs = page->GetSize() / 2;
 
@@ -319,14 +320,14 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
     return key_offset;
 }
 
-vector<pair<int64_t, int64_t>> SSTable::LinearSearchToEndKey(off_t start_offset, int64_t start_key,
-                                                             int64_t end_key) const {
+vector<pair<int64_t, int64_t>> SSTable::LinearSearchToEndKey(off_t start_offset, int64_t start_key, int64_t end_key,
+                                                             const bool is_sequential_flooding = false) const {
     vector<pair<int64_t, int64_t>> result;
 
     auto current_offset = start_offset;
 
     while (true) {
-        const Page *page = GetPage(current_offset);
+        const Page *page = GetPage(current_offset, is_sequential_flooding);
 
         // When start key is the last key in the SSTable, next page will be nullptr
         if (page == nullptr) {

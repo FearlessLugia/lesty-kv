@@ -14,41 +14,41 @@ class TestDb : public TestBase {
         Database db(kMemtableSize);
         const string db_name = "db1";
 
-        db.Open(db_name);
-        for (auto i = 1; i <= 5000; ++i) {
-            db.Put(i, i * 10);
-        }
-        db.Close();
-
-        db.Open(db_name);
-        for (auto i = 500; i <= 1000; ++i) {
-            db.Put(i, i * 100);
-        }
-        db.Close();
-
-        db.Open(db_name);
-        for (auto i = 400; i <= 600; ++i) {
-            db.Put(i, i * 1000);
-        }
-        db.Close();
-
-        db.Open(db_name);
-        for (auto i = 1; i <= 1024; ++i) {
-            db.Put(i, -i * 10);
-        }
-        db.Close();
+        // db.Open(db_name);
+        // for (auto i = 1; i <= 5000; ++i) {
+        //     db.Put(i, i * 10);
+        // }
+        // db.Close();
+        //
+        // db.Open(db_name);
+        // for (auto i = 500; i <= 1000; ++i) {
+        //     db.Put(i, i * 100);
+        // }
+        // db.Close();
+        //
+        // db.Open(db_name);
+        // for (auto i = 400; i <= 600; ++i) {
+        //     db.Put(i, i * 1000);
+        // }
+        // db.Close();
+        //
+        // db.Open(db_name);
+        // for (auto i = 1; i <= 1024; ++i) {
+        //     db.Put(i, -i * 10);
+        // }
+        // db.Close();
 
         db.Open(db_name);
 
         constexpr int64_t key = 1024;
-        const auto value = db.Get(key);
+        const optional<int64_t> value = db.Get(key);
         cout << "Get result: " << endl;
         if (value.has_value()) {
             cout << " Get key " << key << " returns " << value.value() << endl;
         } else {
             cout << " Key " << key << " not found" << endl;
         }
-        assert(value.value() == -10240);
+        assert(value.has_value() && value.value() == -10240);
         cout << "==============================" << endl;
 
         const auto res = db.Scan(1024, 4096);
