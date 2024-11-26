@@ -13,10 +13,10 @@ using namespace std;
 class SSTable {
 public:
     string file_path_;
-    int fd_;
+    mutable int fd_;
     off_t file_size_;
 
-    vector<Page *> pages_;
+    // vector<Page *> pages_;
 
     int64_t min_key_;
     int64_t max_key_;
@@ -25,7 +25,7 @@ public:
     SSTable() = default;
     ~SSTable();
 
-    Page *GetPage(off_t offset, bool is_sequential_flooding) const;
+    Page *GetPage(off_t offset, bool is_sequential_flooding = false) const;
 
     optional<int64_t> Get(const int64_t key) const;
     vector<pair<int64_t, int64_t>> Scan(const int64_t start_key, const int64_t end_key) const;

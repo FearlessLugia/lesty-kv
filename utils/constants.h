@@ -60,4 +60,10 @@ inline constexpr double kPageSequentialFlooding = kCoeffSequentialFlooding * kPa
 inline constexpr size_t kPageNumReserveBTree = 1 + 2;
 
 
+//------------ LSM-Tree ------------
+
+// The fixed size ratio between any two levels of LSM-Tree
+inline constexpr size_t kLsmRatio = 3;
+
+
 #endif // CONSTANTS_H

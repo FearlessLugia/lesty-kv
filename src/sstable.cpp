@@ -17,7 +17,7 @@
 using namespace std;
 
 SSTable::SSTable(const filesystem::path &file_path) : file_path_(file_path) {
-    fd_ = open(file_path.c_str(), O_RDONLY);
+    fd_ = open(file_path.c_str(), F_NOCACHE | O_RDONLY);
     if (fd_ < 0) {
         throw std::runtime_error("Failed to open SSTable file.");
     }
@@ -86,7 +86,7 @@ bool SSTable::ReadEntry(const char *buffer, const size_t buffer_size, size_t &po
     return true;
 }
 
-Page *SSTable::GetPage(off_t offset, const bool is_sequential_flooding = false) const {
+Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) const {
     // Concatenate the name of the file with the offset to get the page id
     const size_t start_pos = file_path_.find('/') + 1;
     const size_t end_pos = file_path_.rfind(".bin");
@@ -102,8 +102,11 @@ Page *SSTable::GetPage(off_t offset, const bool is_sequential_flooding = false) 
 
     // If the page is not in the buffer pool, read it from disk
     char buffer[kPageSize];
+    memset(buffer, 0, sizeof(buffer));
+
     // Align the offset to the beginning of the page
-    const off_t aligned_offset = offset & ~static_cast<off_t>(kPagePairs - 1);
+    const off_t aligned_offset = offset - (offset % kPageSize);
+
     const ssize_t bytes_read = pread(fd_, buffer, kPageSize, aligned_offset);
     if (bytes_read <= 0) {
         LOG("\tCould not read page at offset " << offset << " in " << file_path_);

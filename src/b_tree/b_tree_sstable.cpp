@@ -14,13 +14,24 @@
 #include "../buffer_pool/page.h"
 #include "../memtable.h"
 
-BTreeSSTable::BTreeSSTable(const filesystem::path &file_path) : SSTable() { file_path_ = file_path; }
+BTreeSSTable::BTreeSSTable(const filesystem::path &file_path) : SSTable() {
+    file_path_ = file_path;
+
+    fd_ = open(file_path.c_str(), O_RDONLY | O_CREAT, 0644);
+    if (fd_ < 0) {
+        throw std::runtime_error("Failed to open SSTable file.");
+    }
+
+    file_size_ = GetFileSize();
+    InitialKeyRange();
+}
 
 void BTreeSSTable::InitialKeyRange() {
     char buffer[kPageSize];
 
+    const off_t offset = kPageNumReserveBTree * kPageSize;
     // Read the first block to get the minimum key
-    ssize_t bytes_read = pread(fd_, buffer, kPageSize, 0);
+    ssize_t bytes_read = pread(fd_, buffer, kPageSize, offset);
     if (bytes_read > 0) {
         size_t pos = 0;
         pair<int64_t, int64_t> first_entry;
@@ -30,7 +41,7 @@ void BTreeSSTable::InitialKeyRange() {
     }
 
     // Read the last block to get the maximum key
-    const off_t last_block_offset = file_size_ > kPageSize ? file_size_ - kPageSize : 0;
+    const off_t last_block_offset = file_size_ > offset ? file_size_ - kPageSize : offset;
     bytes_read = pread(fd_, buffer, kPageSize, last_block_offset);
     if (bytes_read > 0) {
         size_t pos = 0;
@@ -42,23 +53,6 @@ void BTreeSSTable::InitialKeyRange() {
     }
 }
 
-
-// bool BTreeSSTable::WriteEntry(char *buffer, const size_t buffer_size, size_t &pos, pair<int64_t, int64_t> &entry) {
-//     // Ensure there is enough space in the buffer for both key and value (2 x int64_t)
-//     if (pos + 2 * sizeof(int64_t) > buffer_size) {
-//         return false; // Not enough data left in the buffer
-//     }
-//
-//     // Read key as int64_t
-//     memcpy(buffer + pos, &entry.first, sizeof(int64_t));
-//     pos += sizeof(int64_t);
-//
-//     // Read value as int64_t
-//     memcpy(buffer + pos, &entry.second, sizeof(int64_t));
-//     pos += sizeof(int64_t);
-//
-//     return true;
-// }
 
 void BTreeSSTable::WritePage(const off_t offset, const Page *page, const bool is_final_page = false) const {
     // Write the page to the file
@@ -122,21 +116,14 @@ void BTreeSSTable::FlushFromMemtable(const vector<int64_t> *data) {
     const off_t start_offset = num_pages * kPageSize;
     off_t offset = start_offset;
 
-    // off_t offset = 0;
-
-    // size_t data_index = 0;
-
     // Write the data to B-Tree leaf nodes
     while (offset < start_offset + data->size() * kPairSize / 2) {
-        // while (offset < start_offset + data->size() * kPairSize / 2) {
         vector<int64_t> page_data;
         page_data.clear();
 
         string page_id = sst_name + "_" + to_string(offset);
-        // for (size_t j = start_offset+offset * 2 / kPairSize; j < start_offset+offset * 2 / kPairSize + kPagePairs * 2
-        // && j < start_offset+data->size(); j++) {
         for (size_t j = (offset - start_offset) * 2 / kPairSize;
-             j < (offset - start_offset) * 2 / kPairSize + kPagePairs * 2 && j < start_offset + data->size(); j++) {
+             j < (offset - start_offset) * 2 / kPairSize + kPagePairs * 2 && j < data->size(); j++) {
             page_data.push_back((*data)[j]);
         }
         LOG("    Current page size: " << page_data.size());
@@ -170,31 +157,6 @@ void BTreeSSTable::FlushFromMemtable(const vector<int64_t> *data) {
 }
 
 void BTreeSSTable::GenerateBTreeLayers(vector<int64_t> prev_layer_nodes) {
-    // vector<int64_t> second_layer;
-    // size_t num_nodes = prev_layer_nodes.size();
-    //
-    // // For internal layer
-    // for (size_t i = 0; i < num_nodes; i += kNumChildrenPerInternal) {
-    //     const size_t root_index = min(i + kNumChildrenPerInternal / 2, num_nodes - 1);
-    //     second_layer.push_back(prev_layer_nodes[root_index]);
-    //
-    //     vector<int64_t> group;
-    //     for (size_t j = i; j < i + kNumChildrenPerInternal && j < num_nodes; ++j) {
-    //         group.push_back(prev_layer_nodes[j]);
-    //     }
-    //     internal_nodes_.push_back(group);
-    // }
-    //
-    // // For root
-    // num_nodes = second_layer.size();
-    // for (size_t i = 0; i < num_nodes; i += kNumChildrenPerRoot) {
-    //
-    //
-    //     const size_t root_index = min(i + kNumChildrenPerRoot / 2, num_nodes - 1);
-    //     root_.push_back(second_layer[root_index]);
-    // }
-
-
     const size_t num_nodes = prev_layer_nodes.size();
 
     const int64_t root_index = num_nodes / 2 - 1;
@@ -225,7 +187,7 @@ optional<int64_t> BTreeSSTable::BinarySearch(const int64_t key) const {
         const size_t mid = left + (right - left) / 2;
         const off_t offset = mid * kPageSize;
 
-        const Page *page = GetPage(offset, false);
+        const Page *page = GetPage(offset);
         const auto data = page->data_;
         const size_t num_pairs = page->GetSize() / 2;
 
@@ -363,7 +325,7 @@ vector<pair<int64_t, int64_t>> BTreeSSTable::LinearSearchToEndKey(off_t start_of
     auto current_offset = start_offset;
 
     while (true) {
-        const Page *page = GetPage(current_offset, false);
+        const Page *page = GetPage(current_offset);
 
         // When start key is the last key in the SSTable, next page will be nullptr
         if (page == nullptr) {

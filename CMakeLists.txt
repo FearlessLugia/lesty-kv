@@ -32,6 +32,10 @@ add_library(kv-lib src/memtable.cpp
         src/buffer_pool/lru/lru.h
         src/b_tree/b_tree_sstable.cpp
         src/b_tree/b_tree_sstable.h
+        src/lsm_tree/lsm_tree.cpp
+        src/lsm_tree/lsm_tree.h
+        src/bloom_filter/bloom_filter.cpp
+        src/bloom_filter/bloom_filter.h
 )
 
 add_executable(kv-test
@@ -39,7 +43,8 @@ add_executable(kv-test
         tests/test_runner.cpp
         tests/test_db.cpp
         tests/test_buffer_pool.cpp
-        tests/test_b_tree.cpp)
+        tests/test_b_tree.cpp
+        tests/test_lsm_tree.cpp)
 
 
 target_link_libraries(kv PUBLIC kv-lib)

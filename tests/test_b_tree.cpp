@@ -15,23 +15,22 @@
 
 class TestBTree : public TestBase {
     static bool TestBuildBTree() {
-        Database db(kMemtableSize);
-        const string db_name = "db1";
-        db.Open(db_name);
+        BTreeSSTable btree("db1/btreetest.bin");
 
-        // auto b_tree_ssts = db.GetSortedBTreeSsts("db_name");
+        vector<int64_t> data;
+        for (auto i = 1; i <= 2048; ++i) {
+            data.push_back(i);
+            data.push_back(i * 100);
+        }
 
-        // for (const auto &b_tree_sst_path: b_tree_ssts) {
-        //     LOG(" Get in " << b_tree_sst_path.string());
-        //
-        //     BufferPool *buffer_pool = new BufferPool(kBufferPoolSize);
-        //
-        //     auto b_tree_sst = BTreeSst(b_tree_sst_path, buffer_pool);
-        //     // auto sst_value = b_tree_sst.WritePage();
-        // }
+        btree.FlushFromMemtable(&data);
 
+        assert(btree.root_.size() == 1);
+        assert(btree.root_[0] == 1024);
+        assert(btree.internal_nodes_.size() == 2);
+        assert(btree.internal_nodes_[0] == vector<int64_t>({256, 512, 768}));
+        assert(btree.internal_nodes_[1] == vector<int64_t>({1280, 1536, 1792}));
 
-        db.Close();
         return true;
     }
 

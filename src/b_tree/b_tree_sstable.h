@@ -24,7 +24,6 @@ public:
 
     void GenerateBTreeLayers(vector<int64_t> prev_layer_nodes);
 
-
 private:
     void InitialKeyRange();
 
