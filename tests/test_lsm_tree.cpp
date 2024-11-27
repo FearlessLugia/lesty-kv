@@ -10,13 +10,9 @@
 
 class TestLsmTree : public TestBase {
     static bool TestMultipleMergeSort() {
-
-        BTreeSSTable a = BTreeSSTable("db1/btree3.bin");
-        BTreeSSTable b = BTreeSSTable("db1/btree4.bin");
-        BTreeSSTable c = BTreeSSTable("db1/btree5.bin");
-        // BTreeSSTable a = BTreeSSTable("/Users/kiiro/CLionProjects/kv/cmake-build-debug/db1/btree3.bin");
-        // BTreeSSTable b = BTreeSSTable("/Users/kiiro/CLionProjects/kv/cmake-build-debug/db1/btree4.bin");
-        // BTreeSSTable c = BTreeSSTable("/Users/kiiro/CLionProjects/kv/cmake-build-debug/db1/btree5.bin");
+        BTreeSSTable a = BTreeSSTable("db1/btree3.bin", false);
+        BTreeSSTable b = BTreeSSTable("db1/btree4.bin", false);
+        BTreeSSTable c = BTreeSSTable("db1/btree5.bin", false);
         vector input = {a, b, c};
 
         LsmTree lsm_tree = LsmTree();
@@ -27,9 +23,9 @@ class TestLsmTree : public TestBase {
         assert(result[499] == make_pair(500, -5000));
         assert(result[1023] == make_pair(1024, -10240));
 
-        for (auto &[frt, snd]: result) {
-            cout << frt << " " << snd << endl;
-        }
+        // for (auto &[frt, snd]: result) {
+        //     cout << frt << " " << snd << endl;
+        // }
 
         return true;
     }

@@ -16,8 +16,8 @@ int main() {
     vector<std::pair<TestBase *, string>> testClasses = {
             // make_pair(new TestBufferPool(), "TestBufferPool"),
             // make_pair(new TestBTree(), "TestBTree"),
-            make_pair(new TestLsmTree(), "TestLsmTree"),
-            // make_pair(new TestDb(), "TestDb"),
+            // make_pair(new TestLsmTree(), "TestLsmTree"),
+            make_pair(new TestDb(), "TestDb"),
     };
 
     bool allTestPassed = true;

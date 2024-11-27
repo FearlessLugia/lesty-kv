@@ -4,6 +4,7 @@
 
 #include "b_tree_sstable.h"
 
+#include <regex>
 #include <sys/_types/_off_t.h>
 #include <sys/fcntl.h>
 #include <unistd.h>
@@ -13,11 +14,20 @@
 #include "../buffer_pool/buffer_pool_manager.h"
 #include "../buffer_pool/page.h"
 #include "../memtable.h"
+#include "../sst_counter.h"
 
-BTreeSSTable::BTreeSSTable(const filesystem::path &file_path) : SSTable() {
-    file_path_ = file_path;
+BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new) : SSTable() {
+    if (create_new) {
+        // If creation, generate a new file name
+        const int64_t counter = SSTCounter::GetInstance().GetAndIncrement();
+        const string new_file_name = "btree" + to_string(counter) + ".bin";
+        file_path_ = fs::path(db_name) / new_file_name;
+    } else {
+        // If not creation, use the given file name
+        file_path_ = fs::path(db_name);
+    }
 
-    fd_ = open(file_path.c_str(), O_RDONLY | O_CREAT, 0644);
+    fd_ = open(file_path_.c_str(), O_RDONLY | O_CREAT, 0644);
     if (fd_ < 0) {
         throw std::runtime_error("Failed to open SSTable file.");
     }

@@ -15,7 +15,7 @@
 
 class TestBTree : public TestBase {
     static bool TestBuildBTree() {
-        BTreeSSTable btree("db1/btreetest.bin");
+        BTreeSSTable btree("db1", true);
 
         vector<int64_t> data;
         for (auto i = 1; i <= 2048; ++i) {

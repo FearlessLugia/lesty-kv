@@ -7,6 +7,7 @@
 #include <sys/fcntl.h>
 
 #include "../../utils/log.h"
+#include "../sst_counter.h"
 
 using namespace std;
 
@@ -28,7 +29,8 @@ vector<pair<int64_t, int64_t>> LsmTree::SortMerge(vector<BTreeSSTable> *ssts) {
     vector<off_t> offsets(n, kPageNumReserveBTree * kPageSize); // current offset
 
     vector<pair<int64_t, int64_t>> result;
-    BTreeSSTable merged_table = BTreeSSTable("db1/btree_merged.bin");
+    string db_name = SSTCounter::GetInstance().GetDbName();
+    BTreeSSTable merged_table = BTreeSSTable(db_name, true);
 
     for (size_t i = 0; i < n; ++i) {
         auto &sst = (*ssts)[i];
@@ -91,3 +93,37 @@ vector<pair<int64_t, int64_t>> LsmTree::SortMerge(vector<BTreeSSTable> *ssts) {
 
     return result;
 }
+
+// When full in previous level, Sort Merge all the ssts in this level
+void LsmTree::SortMergePreviousLevel() {
+    for (auto current_level = 0; current_level < level_; current_level++) {
+        // for (auto current_level: levelled_sst_) {
+        auto current_level_nodes = levelled_sst_[current_level];
+        if (current_level_nodes.size() == kLsmRatio) {
+            // needs to do the merge
+            auto result = SortMerge(&current_level_nodes);
+
+            // and then write to the next level
+            auto next_level = levelled_sst_[current_level + 1];
+
+            // If the next level is not full, add the result to the next level
+            if (next_level.size() < kLsmRatio) {
+                const string db_name = SSTCounter::GetInstance().GetDbName();
+                BTreeSSTable new_sst_nodes = BTreeSSTable(db_name, true);
+                next_level.push_back(new_sst_nodes);
+
+            } else {
+                // If the next level is full, Sort Merge all the ssts in this level
+                auto next_result = SortMerge(&next_level);
+                // and then write to the next level
+                // auto next_next_level = levelled_sst_[current_level[current_level + 2]];
+                // next_next_level.push_back(next_result);
+            }
+        }
+    }
+}
+
+// Sort Merge every two ssts in the final level
+void LsmTree::SortMergeLastLevel() {}
+
+void LsmTree::FlushToNewLevel() {}

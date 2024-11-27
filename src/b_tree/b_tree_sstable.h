@@ -14,9 +14,7 @@ public:
     vector<int64_t> root_;
     vector<vector<int64_t>> internal_nodes_;
 
-    BTreeSSTable(const filesystem::path &path);
-
-    // bool WriteEntry(char *buffer, const size_t buffer_size, size_t &pos, pair<int64_t, int64_t> &entry);
+    BTreeSSTable(const string &db_name, bool create_new);
 
     void WritePage(const off_t offset, const Page *page, bool is_final_page) const;
 

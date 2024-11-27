@@ -10,10 +10,12 @@
 #include <sstream>
 #include <unistd.h> // for pread, close
 #include <unordered_set>
+
 #include "../utils/constants.h"
 #include "../utils/log.h"
 #include "b_tree/b_tree_sstable.h"
 #include "buffer_pool/buffer_pool_manager.h"
+#include "sst_counter.h"
 
 Database::Database(const size_t memtable_size) : memtable_(nullptr) {
     memtable_ = new Memtable(memtable_size);
@@ -35,34 +37,18 @@ void Database::Open(const string &db_name) {
     if (!filesystem::exists(db_name)) {
         filesystem::create_directory(db_name);
         LOG("Database created: " << db_name);
-        sst_counter_ = 0;
     } else {
         LOG("Database opened: " << db_name);
-
-        // find the largest SST file number
-        sst_counter_ = 0;
-        const regex filename_pattern(R"(btree(\d+)\.bin)");
-        for (const auto &entry: filesystem::directory_iterator(db_name)) {
-            string filename = entry.path().filename().string();
-            smatch match;
-            if (regex_match(filename, match, filename_pattern)) {
-                const int64_t file_counter = stol(match[1].str());
-                if (file_counter >= sst_counter_) {
-                    sst_counter_ = file_counter + 1; // set the next number
-                }
-            }
-        }
     }
+
+    // Initialize SSTCounter with the database name, get current SST counter
+    SSTCounter::GetInstance().Initialize(db_name);
 }
 
-vector<fs::path> Database::GetSortedSsts(const string &path, bool is_b_tree = true) {
+vector<fs::path> Database::GetSortedSsts(const string &path) {
     vector<filesystem::path> ssts;
     regex filename_pattern;
-    if (is_b_tree) {
-        filename_pattern = R"(btree(\d+)\.bin)";
-    } else {
-        filename_pattern = R"(sst(\d+)\.bin)";
-    }
+    filename_pattern = R"(btree(\d+)\.bin)";
 
     for (const auto &entry: fs::directory_iterator(path)) {
         if (entry.is_regular_file() && regex_match(entry.path().filename().string(), filename_pattern)) {
@@ -71,34 +57,14 @@ vector<fs::path> Database::GetSortedSsts(const string &path, bool is_b_tree = tr
     }
 
     ranges::sort(ssts, [](const fs::path &a, const fs::path &b) {
-        auto time_a = fs::last_write_time(a);
-        auto time_b = fs::last_write_time(b);
+        const auto time_a = fs::last_write_time(a);
+        const auto time_b = fs::last_write_time(b);
 
         return time_a > time_b;
     });
 
     return ssts;
 }
-
-// vector<fs::path> Database::GetSortedBTreeSsts(const string &path) {
-//     vector<filesystem::path> ssts;
-//     const regex filename_pattern(R"(btree(\d+)\.bin)");
-//
-//     for (const auto &entry: fs::directory_iterator(path)) {
-//         if (entry.is_regular_file() && regex_match(entry.path().filename().string(), filename_pattern)) {
-//             ssts.push_back(entry.path());
-//         }
-//     }
-//
-//     ranges::sort(ssts, [](const fs::path &a, const fs::path &b) {
-//         auto time_a = fs::last_write_time(a);
-//         auto time_b = fs::last_write_time(b);
-//
-//         return time_a > time_b;
-//     });
-//
-//     return ssts;
-// }
 
 void Database::Close() {
     if (memtable_->Size() > 0) {
@@ -135,7 +101,7 @@ optional<int64_t> Database::Get(const int64_t &key) const {
     }
 
     // find in SSTs from the newest to the oldest
-    auto ssts = GetSortedSsts(db_name_, true);
+    auto ssts = GetSortedSsts(db_name_);
 
     for (const auto &sst_path: ssts) {
         LOG(" Get in " << sst_path.string());
@@ -167,7 +133,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
     }
 
     // find in SSTs from the newest to the oldest
-    auto ssts = GetSortedSsts(db_name_, true);
+    auto ssts = GetSortedSsts(db_name_);
     // sstables_ = ssts;
 
     vector<pair<int64_t, int64_t>> values;
@@ -185,7 +151,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
         }
     }
 
-    sort(result.begin(), result.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+    ranges::sort(result, [](const auto &a, const auto &b) { return a.first < b.first; });
 
     return result;
 }
@@ -196,7 +162,7 @@ void Database::FlushToSst() {
 
     // Generate an increased-number-filename for the new SST file
     ostringstream file_name;
-    file_name << db_name_ << "/sst" << sst_counter_++ << ".bin";
+    // file_name << db_name_ << "/sst" << sst_counter_++ << ".bin";
 
     ofstream outfile(file_name.str(), ios::binary);
     if (!outfile) {
@@ -215,42 +181,11 @@ void Database::FlushToSst() {
 
 void Database::FlushToBTreeSst() {
     // Generate an increased-number-filename for the new SST file
-    string file_name = db_name_ + "/btree" + to_string(sst_counter_++) + ".bin";
-
-    const fs::path file_path = file_name;
-    auto b_tree_sst = BTreeSSTable(file_path);
+    const string db_name = SSTCounter::GetInstance().GetDbName();
+    BTreeSSTable b_tree_sst = BTreeSSTable(db_name, true);
 
     const auto data = memtable_->Traverse();
     b_tree_sst.FlushFromMemtable(&data);
 
     // LOG("  Memtable flushed to SST: " << file_path);
 }
-
-// void Database::FlushToBTreeSst() {
-//     // Generate an increased-number-filename for the new SST file
-//     ostringstream file_name;
-//     file_name << db_name_ << "/btree" << sst_counter_++ << ".bin";
-//
-//
-//     const fs::path file_path = file_name.str();
-//     ofstream outfile(file_path, ios::binary);
-//     if (!outfile) {
-//         cerr << "  File could not be opened" << endl;
-//         exit(1);
-//     }
-//
-//     off_t offset = 0;
-//
-//     auto data = memtable_->Traverse();
-//
-//     while (true) {
-//         const auto page = new Page(0, data);
-//         WritePage(offset, page);
-//         offset += kPageSize;
-//     }
-//
-//
-//     LOG("  Memtable flushed to SST: " << file_path);
-//
-//     outfile.close();
-// }
