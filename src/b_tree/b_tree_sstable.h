@@ -18,7 +18,7 @@ public:
 
     void WritePage(const off_t offset, const Page *page, bool is_final_page) const;
 
-    void FlushFromMemtable(const vector<int64_t> *data);
+    string FlushToStorage(const vector<int64_t> *data);
 
     void GenerateBTreeLayers(vector<int64_t> prev_layer_nodes);
 

@@ -4,7 +4,6 @@
 
 #ifndef DATABASE_H
 #define DATABASE_H
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -43,7 +42,7 @@ public:
 
     void FlushToSst();
 
-    void FlushToBTreeSst();
+    void FlushToBTreeSst() const;
 };
 
 #endif // DATABASE_H

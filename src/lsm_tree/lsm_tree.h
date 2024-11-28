@@ -11,15 +11,22 @@ class LsmTree {
 
 public:
     int64_t level_;
-    vector<vector<BTreeSSTable>> levelled_sst_;
+    vector<vector<BTreeSSTable *>> levelled_sst_;
 
-    vector<pair<int64_t, int64_t>> SortMerge(vector<BTreeSSTable> *ssts);
+    vector<int64_t> SortMerge(vector<BTreeSSTable *> *ssts);
 
     void SortMergePreviousLevel();
+    void DeleteFile(const std::string &file_path);
 
     void SortMergeLastLevel();
 
-    void FlushToNewLevel();
+    void SortMergeWritePreviousLevel(vector<BTreeSSTable *> *nodes, int current_level);
+
+    void SortMergeWriteLastLevel(vector<BTreeSSTable *> *nodes);
+
+    vector<vector<BTreeSSTable>> ReadSSTsFromStorage();
+
+    void BuildLsmTree();
 };
 
 

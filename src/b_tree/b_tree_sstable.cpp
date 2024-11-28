@@ -16,11 +16,13 @@
 #include "../memtable.h"
 #include "../sst_counter.h"
 
+namespace fs = std::filesystem;
+
 BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new) : SSTable() {
     if (create_new) {
         // If creation, generate a new file name
-        const int64_t counter = SSTCounter::GetInstance().GetAndIncrement();
-        const string new_file_name = "btree" + to_string(counter) + ".bin";
+        // Level set to be 0, as it's the first level of the B-Tree
+        const string new_file_name = SSTCounter::GetInstance().GenerateFileName(0);
         file_path_ = fs::path(db_name) / new_file_name;
     } else {
         // If not creation, use the given file name
@@ -108,8 +110,7 @@ void BTreeSSTable::WritePage(const off_t offset, const Page *page, const bool is
 }
 
 
-void BTreeSSTable::FlushFromMemtable(const vector<int64_t> *data) {
-    // 1 memtable -> 1 SSTable
+string BTreeSSTable::FlushToStorage(const vector<int64_t> *data) {
     fd_ = open(file_path_.c_str(), O_WRONLY | O_CREAT, 0644);
 
     const size_t start_pos = file_path_.find('/') + 1;
@@ -164,6 +165,12 @@ void BTreeSSTable::FlushFromMemtable(const vector<int64_t> *data) {
     }
 
     LOG("  Memtable flushed to SST: " << file_path_);
+
+    file_size_ = GetFileSize();
+    min_key_ = (*data)[0];
+    max_key_ = (*data)[data->size() - 2];
+
+    return file_path_;
 }
 
 void BTreeSSTable::GenerateBTreeLayers(vector<int64_t> prev_layer_nodes) {

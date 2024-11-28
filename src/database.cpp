@@ -70,7 +70,7 @@ void Database::Close() {
     if (memtable_->Size() > 0) {
         LOG("Closing database and flushing memtable to SSTs: " << db_name_);
 
-        FlushToSst();
+        FlushToBTreeSst();
         memtable_->clear();
     }
 
@@ -179,13 +179,14 @@ void Database::FlushToSst() {
     outfile.close();
 }
 
-void Database::FlushToBTreeSst() {
+void Database::FlushToBTreeSst() const {
     // Generate an increased-number-filename for the new SST file
     const string db_name = SSTCounter::GetInstance().GetDbName();
     BTreeSSTable b_tree_sst = BTreeSSTable(db_name, true);
 
+    // 1 memtable -> 1 SSTable
     const auto data = memtable_->Traverse();
-    b_tree_sst.FlushFromMemtable(&data);
+    b_tree_sst.FlushToStorage(&data);
 
     // LOG("  Memtable flushed to SST: " << file_path);
 }

@@ -37,6 +37,7 @@ add_library(kv-lib src/memtable.cpp
         src/bloom_filter/bloom_filter.cpp
         src/bloom_filter/bloom_filter.h
         src/sst_counter.h
+        src/sst_counter.cpp
 )
 
 add_executable(kv-test
