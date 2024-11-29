@@ -14,7 +14,8 @@ public:
     vector<int64_t> root_;
     vector<vector<int64_t>> internal_nodes_;
 
-    BTreeSSTable(const string &db_name, bool create_new);
+    // Default level set to 0, as it is the first level of the B-Tree
+    BTreeSSTable(const string &db_name, bool create_new, int64_t level = 0);
 
     void WritePage(const off_t offset, const Page *page, bool is_final_page) const;
 

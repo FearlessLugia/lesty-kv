@@ -91,9 +91,10 @@ void BufferPool::Remove() {
         return;
 
     // get the page to remove
-    Page *page_to_remove = eviction_policy_->front_->page_;
+    const Page *page_to_remove = eviction_policy_->front_->page_;
     // remove the page from the LRU queue
     eviction_policy_->Evict();
+    LOG("    Removing page " << page_to_remove->id_ << " from buffer pool");
 
     // remove the page from the buffer pool
     const size_t index = HashFunction(page_to_remove->id_);
@@ -128,6 +129,10 @@ void BufferPool::Clear() {
         head = nullptr;
     }
     size_ = 0;
+
+    eviction_policy_->Clear();
+
+    LOG("  Buffer pool cleared");
 }
 
 void BufferPool::Resize() {}

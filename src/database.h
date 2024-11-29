@@ -21,7 +21,7 @@ class Database {
 
     // vector<SSTable> *sstables_;
 
-    vector<fs::path> sstables_;
+    // vector<fs::path> sstables_;
 
     static vector<fs::path> GetSortedSsts(const string &path);
 
@@ -34,15 +34,15 @@ public:
 
     void Close();
 
-    void Put(const int64_t &key, const int64_t &value);
+    void Put(int64_t key, int64_t value);
 
-    optional<int64_t> Get(const int64_t &key) const;
+    optional<int64_t> Get(int64_t key) const;
 
     vector<pair<int64_t, int64_t>> Scan(int64_t start_key, int64_t end_key) const;
 
-    void FlushToSst();
+    // void FlushToSst();
 
-    void FlushToBTreeSst() const;
+    void FlushToMemtable() const;
 };
 
 #endif // DATABASE_H

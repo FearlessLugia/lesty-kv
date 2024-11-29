@@ -65,5 +65,11 @@ inline constexpr size_t kPageNumReserveBTree = 1 + 2;
 // The fixed size ratio between any two levels of LSM-Tree
 inline constexpr size_t kLsmRatio = 3;
 
+// Starting this level, apply Dostoevsky on LSM-Tree
+// So, level 0 needs 3 SSTables to merge
+// level 1 needs 9 SSTables to merge
+// level 2 needs 2 SSTables to merge
+inline constexpr size_t kLevelToApplyDostoevsky = 2;
+
 
 #endif // CONSTANTS_H

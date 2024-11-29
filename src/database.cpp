@@ -15,6 +15,7 @@
 #include "../utils/log.h"
 #include "b_tree/b_tree_sstable.h"
 #include "buffer_pool/buffer_pool_manager.h"
+#include "lsm_tree/lsm_tree.h"
 #include "sst_counter.h"
 
 Database::Database(const size_t memtable_size) : memtable_(nullptr) {
@@ -25,9 +26,8 @@ Database::Database(const size_t memtable_size) : memtable_(nullptr) {
 Database::~Database() {
     {
         delete memtable_;
-        // for (auto &sst: sstables_) {
-        //     sst.~SSTable();
-        // }
+
+        BufferPoolManager::GetInstance()->Clear();
     }
 }
 
@@ -42,8 +42,13 @@ void Database::Open(const string &db_name) {
     }
 
     // Initialize SSTCounter with the database name, get current SST counter
-    SSTCounter::GetInstance().Initialize(db_name);
+    SSTCounter::GetInstance().SetDbName(db_name);
+    // SSTCounter::GetInstance().Initialize();
+
+    // Build LSM-Tree
+    LsmTree::GetInstance().BuildLsmTree();
 }
+
 
 vector<fs::path> Database::GetSortedSsts(const string &path) {
     vector<filesystem::path> ssts;
@@ -70,28 +75,27 @@ void Database::Close() {
     if (memtable_->Size() > 0) {
         LOG("Closing database and flushing memtable to SSTs: " << db_name_);
 
-        FlushToBTreeSst();
+        FlushToMemtable();
         memtable_->clear();
     }
 
-    // for (auto &sst: sstables_) {
-    //     sst.~SSTable();
-    // }
+    BufferPoolManager::GetInstance()->Clear();
 
     LOG("Database closed");
+    LOG("========================================");
 }
 
-void Database::Put(const int64_t &key, const int64_t &value) {
+void Database::Put(const int64_t key, const int64_t value) {
     memtable_->Put(key, value);
 
     if (memtable_->Size() >= memtable_->memtable_size) {
-        LOG(" Memtable is full, flushing to SSTs");
-        FlushToSst();
+        LOG(" ┌Memtable is full, flushing to SST");
+        FlushToMemtable();
         memtable_->clear();
     }
 }
 
-optional<int64_t> Database::Get(const int64_t &key) const {
+optional<int64_t> Database::Get(const int64_t key) const {
     LOG("Get key: " << key);
 
     // find in memtable
@@ -156,37 +160,40 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
     return result;
 }
 
-void Database::FlushToSst() {
-    FlushToBTreeSst();
-    return;
+// void Database::FlushToSst() {
+//     FlushToMemtable();
+//     return;
+//
+//     // Generate an increased-number-filename for the new SST file
+//     ostringstream file_name;
+//     // file_name << db_name_ << "/sst" << sst_counter_++ << ".bin";
+//
+//     ofstream outfile(file_name.str(), ios::binary);
+//     if (!outfile) {
+//         cerr << "  File could not be opened" << endl;
+//         exit(1);
+//     }
+//
+//     for (const auto &[key, value]: memtable_->TraversePair()) {
+//         outfile.write(reinterpret_cast<const char *>(&key), sizeof(key));
+//         outfile.write(reinterpret_cast<const char *>(&value), sizeof(value));
+//     }
+//
+//     // LOG("  Memtable flushed to SST: " << file_name.str());
+//     outfile.close();
+// }
 
-    // Generate an increased-number-filename for the new SST file
-    ostringstream file_name;
-    // file_name << db_name_ << "/sst" << sst_counter_++ << ".bin";
-
-    ofstream outfile(file_name.str(), ios::binary);
-    if (!outfile) {
-        cerr << "  File could not be opened" << endl;
-        exit(1);
-    }
-
-    for (const auto &[key, value]: memtable_->TraversePair()) {
-        outfile.write(reinterpret_cast<const char *>(&key), sizeof(key));
-        outfile.write(reinterpret_cast<const char *>(&value), sizeof(value));
-    }
-
-    // LOG("  Memtable flushed to SST: " << file_name.str());
-    outfile.close();
-}
-
-void Database::FlushToBTreeSst() const {
-    // Generate an increased-number-filename for the new SST file
+void Database::FlushToMemtable() const {
+    // Flush to level 0 of LSM-Tree
     const string db_name = SSTCounter::GetInstance().GetDbName();
     BTreeSSTable b_tree_sst = BTreeSSTable(db_name, true);
+    LOG(" | Flushing to SST: " << b_tree_sst.file_path_);
 
     // 1 memtable -> 1 SSTable
     const auto data = memtable_->Traverse();
     b_tree_sst.FlushToStorage(&data);
 
-    // LOG("  Memtable flushed to SST: " << file_path);
+    LsmTree &lsm_tree = LsmTree::GetInstance();
+    lsm_tree.AddSst(b_tree_sst);
+    lsm_tree.OrderLsmTree();
 }

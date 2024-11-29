@@ -18,11 +18,10 @@
 
 namespace fs = std::filesystem;
 
-BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new) : SSTable() {
+BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new, const int64_t level) : SSTable() {
     if (create_new) {
         // If creation, generate a new file name
-        // Level set to be 0, as it's the first level of the B-Tree
-        const string new_file_name = SSTCounter::GetInstance().GenerateFileName(0);
+        const string new_file_name = SSTCounter::GetInstance().GenerateFileName(level);
         file_path_ = fs::path(db_name) / new_file_name;
     } else {
         // If not creation, use the given file name
@@ -34,8 +33,10 @@ BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new) : SSTab
         throw std::runtime_error("Failed to open SSTable file.");
     }
 
-    file_size_ = GetFileSize();
-    InitialKeyRange();
+    if (!create_new) {
+        file_size_ = GetFileSize();
+        InitialKeyRange();
+    }
 }
 
 void BTreeSSTable::InitialKeyRange() {
@@ -137,17 +138,17 @@ string BTreeSSTable::FlushToStorage(const vector<int64_t> *data) {
              j < (offset - start_offset) * 2 / kPairSize + kPagePairs * 2 && j < data->size(); j++) {
             page_data.push_back((*data)[j]);
         }
-        LOG("    Current page size: " << page_data.size());
+        LOG("  ┌-Current page size: " << page_data.size());
         const auto page = new Page(page_id, page_data);
 
         // Fetch the last key of every page
         if (!page_data.empty()) {
             const int64_t last_key = page_data[page_data.size() - 2];
-            LOG("    Last key: " << last_key);
+            LOG("  | Last key: " << last_key);
             prev_layer_nodes.push_back(last_key);
         }
 
-        LOG("  Writing page " << page_id << " at offset " << offset);
+        LOG("  └Writing page " << page_id);
         WritePage(offset, page);
 
         offset += kPageSize;
@@ -164,7 +165,7 @@ string BTreeSSTable::FlushToStorage(const vector<int64_t> *data) {
         WritePage(kPageSize * (i + 1), new Page(sst_name + "_" + to_string(i + 1), internal_nodes_[i]));
     }
 
-    LOG("  Memtable flushed to SST: " << file_path_);
+    LOG(" └Flushed to SST: " << file_path_);
 
     file_size_ = GetFileSize();
     min_key_ = (*data)[0];
