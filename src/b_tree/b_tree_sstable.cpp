@@ -33,6 +33,8 @@ BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new, const i
         throw std::runtime_error("Failed to open SSTable file.");
     }
 
+    LOG("  Open file: " << file_path_);
+
     if (!create_new) {
         file_size_ = GetFileSize();
         InitialKeyRange();
@@ -213,12 +215,10 @@ optional<int64_t> BTreeSSTable::BinarySearch(const int64_t key) const {
         const int64_t last_key = data[(num_pairs - 1) * 2];
 
         if (key == first_key) {
-            ::close(fd_);
             LOG("\t\tFound key " << key << " in " << file_path_);
             return data[1];
         }
         if (key == last_key) {
-            ::close(fd_);
             LOG("\t\tFound key " << key << " in " << file_path_);
             return data[num_pairs * 2 - 1];
         }
@@ -233,7 +233,6 @@ optional<int64_t> BTreeSSTable::BinarySearch(const int64_t key) const {
                 const int64_t mid_key = data[page_mid * 2];
 
                 if (mid_key == key) {
-                    ::close(fd_);
                     LOG("\t\tFound key " << key << " in " << file_path_);
                     return data[page_mid * 2 + 1];
                 }
@@ -245,7 +244,6 @@ optional<int64_t> BTreeSSTable::BinarySearch(const int64_t key) const {
                 }
             }
 
-            ::close(fd_);
             return nullopt;
         }
 
@@ -257,7 +255,7 @@ optional<int64_t> BTreeSSTable::BinarySearch(const int64_t key) const {
     }
 
     LOG("  2 Could not find key " << key << " in " << file_path_);
-    ::close(fd_);
+    // ::close(fd_);
     return nullopt;
 }
 
@@ -337,13 +335,13 @@ int64_t BTreeSSTable::BinarySearchUpperbound(const int64_t key, bool is_sequenti
 }
 
 vector<pair<int64_t, int64_t>> BTreeSSTable::LinearSearchToEndKey(off_t start_offset, int64_t start_key,
-                                                                  int64_t end_key) const {
+                                                                  int64_t end_key, bool is_sequential_flooding) const {
     vector<pair<int64_t, int64_t>> result;
 
     auto current_offset = start_offset;
 
     while (true) {
-        const Page *page = GetPage(current_offset);
+        const Page *page = GetPage(current_offset, is_sequential_flooding);
 
         // When start key is the last key in the SSTable, next page will be nullptr
         if (page == nullptr) {

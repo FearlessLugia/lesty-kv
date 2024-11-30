@@ -46,7 +46,7 @@ void Database::Open(const string &db_name) {
     // SSTCounter::GetInstance().Initialize();
 
     // Build LSM-Tree
-    LsmTree::GetInstance().BuildLsmTree();
+    LsmTree::GetInstance();
 }
 
 
@@ -98,11 +98,15 @@ void Database::Put(const int64_t key, const int64_t value) {
 optional<int64_t> Database::Get(const int64_t key) const {
     LOG("Get key: " << key);
 
-    // find in memtable
+    // Find in memtable
     const auto value = memtable_->Get(key);
     if (value.has_value()) {
         return value;
     }
+
+    // Find in LSM-Tree
+    const LsmTree &lsm_tree = LsmTree::GetInstance();
+    return lsm_tree.Get(key);
 
     // find in SSTs from the newest to the oldest
     auto ssts = GetSortedSsts(db_name_);
@@ -186,12 +190,12 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
 void Database::FlushToMemtable() const {
     // Flush to level 0 of LSM-Tree
     const string db_name = SSTCounter::GetInstance().GetDbName();
-    BTreeSSTable b_tree_sst = BTreeSSTable(db_name, true);
-    LOG(" | Flushing to SST: " << b_tree_sst.file_path_);
+    auto b_tree_sst = new BTreeSSTable(db_name, true);
+    LOG(" | Flushing to SST: " << b_tree_sst->file_path_);
 
     // 1 memtable -> 1 SSTable
     const auto data = memtable_->Traverse();
-    b_tree_sst.FlushToStorage(&data);
+    b_tree_sst->FlushToStorage(&data);
 
     LsmTree &lsm_tree = LsmTree::GetInstance();
     lsm_tree.AddSst(b_tree_sst);

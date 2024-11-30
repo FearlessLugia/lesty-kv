@@ -24,15 +24,15 @@ public:
     void GenerateBTreeLayers(vector<int64_t> prev_layer_nodes);
 
 private:
-    void InitialKeyRange();
+    void InitialKeyRange() override;
 
     // Returns the offset of startKey or nullopt if not found
-    optional<int64_t> BinarySearch(const int64_t key) const;
+    optional<int64_t> BinarySearch(const int64_t key) const override;
 
     // Returns the offset of startKey or its upper bound if not found
-    int64_t BinarySearchUpperbound(const int64_t key, bool is_sequential_flooding) const;
+    int64_t BinarySearchUpperbound(const int64_t key, bool is_sequential_flooding) const override;
 
-    vector<pair<int64_t, int64_t>> LinearSearchToEndKey(off_t start_offset, int64_t start_key, int64_t end_key) const;
+    vector<pair<int64_t, int64_t>> LinearSearchToEndKey(off_t start_offset, int64_t start_key, int64_t end_key, bool is_sequential_flooding) const override;
 };
 
 

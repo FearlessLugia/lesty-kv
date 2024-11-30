@@ -16,15 +16,15 @@ using namespace std;
 namespace fs = std::filesystem;
 
 
-LsmTree::LsmTree() { levelled_sst_.clear(); }
+LsmTree::LsmTree() { BuildLsmTree(); }
 
 LsmTree &LsmTree::GetInstance() {
     static LsmTree instance;
     return instance;
 }
 
-vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable> *ssts) {
-    LOG(" ┌Sort Merge " << (*ssts)[0].file_path_ << " to " << (*ssts)[ssts->size() - 1].file_path_);
+vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts) {
+    LOG(" ┌Sort Merge " << (*ssts)[0]->file_path_ << " to " << (*ssts)[ssts->size() - 1]->file_path_);
 
     vector<int64_t> result;
 
@@ -37,8 +37,8 @@ vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable> *ssts) {
 
     for (size_t i = 0; i < n; ++i) {
         auto &sst = (*ssts)[i];
-        sst.fd_ = open(sst.file_path_.c_str(), O_RDONLY);
-        const auto &page = sst.GetPage(offsets[i]);
+        sst->fd_ = open(sst->file_path_.c_str(), O_RDONLY);
+        const auto &page = sst->GetPage(offsets[i]);
         if (page->GetSize() > 0) {
             if (!page->data_.empty()) {
                 current_pages[i] = page->data_;
@@ -73,12 +73,12 @@ vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable> *ssts) {
         } else {
             // Read next page
             offsets[sst_id] += kPageSize;
-            if (offsets[sst_id] >= sst.file_size_) {
-                LOG("    Read EOF " << sst.file_path_);
+            if (offsets[sst_id] >= sst->file_size_) {
+                LOG("    Read EOF " << sst->file_path_);
                 continue;
             }
 
-            const auto &next_page = sst.GetPage(offsets[sst_id]);
+            const auto &next_page = sst->GetPage(offsets[sst_id]);
 
             if (next_page) {
                 min_heap.push({next_page->data_[0], next_page->data_[1], 2, sst_id});
@@ -99,7 +99,7 @@ vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable> *ssts) {
     return result;
 }
 
-void LsmTree::AddSst(BTreeSSTable sst) {
+void LsmTree::AddSst(BTreeSSTable *sst) {
     // Ensure the first level is not empty
     if (levelled_sst_.empty()) {
         levelled_sst_.resize(1);
@@ -115,8 +115,8 @@ void LsmTree::SortMergePreviousLevel(int64_t current_level) {
         // needs to do the merge
         const auto result = SortMerge(&levelled_sst_[current_level]);
 
-        for (auto &node: levelled_sst_[current_level]) {
-            DeleteFile(node.file_path_);
+        for (const auto &node: levelled_sst_[current_level]) {
+            DeleteFile(node->file_path_);
         }
         levelled_sst_[current_level].clear();
 
@@ -129,58 +129,19 @@ void LsmTree::SortMergePreviousLevel(int64_t current_level) {
         }
 
         const int64_t next_level = current_level + 1;
-        // if (levelled_sst_[next_level].size() < kLsmRatio - 1) {
 
         // Add the result to the next level
-        string db_name = SSTCounter::GetInstance().GetDbName();
-        BTreeSSTable new_sst_nodes = BTreeSSTable(db_name, true, next_level);
+        const string db_name = SSTCounter::GetInstance().GetDbName();
+        const auto new_sst_nodes = new BTreeSSTable(db_name, true, next_level);
 
         // Generate a new SST in storage
-        string file_path = new_sst_nodes.FlushToStorage(&result);
+        string file_path = new_sst_nodes->FlushToStorage(&result);
 
         levelled_sst_[next_level].push_back(new_sst_nodes);
-        // }
 
-        // // While the next level is about to be full, Sort Merge all the ssts in this level
-        // while (levelled_sst_[next_level].size() == kLsmRatio - 1) {
-        //     auto next_result = SortMerge(&levelled_sst_[next_level]);
-        //
-        //     // Write to the "next" level
-        //     // next_level = levelled_sst_[current_level++];
-        //
-        //     string db_name = SSTCounter::GetInstance().GetDbName();
-        //     BTreeSSTable new_sst_nodes = BTreeSSTable(db_name, true, next_level);
-        //     for (auto &node: levelled_sst_[next_level]) {
-        //         DeleteFile(node.file_path_);
-        //     }
-        //     levelled_sst_[next_level].clear();
-        //     levelled_sst_[next_level].push_back(new_sst_nodes);
-        //
-        //     // Generate a new SST in storage
-        //     auto file_path = new_sst_nodes.FlushToStorage(&next_result);
-        // }
+        delete new_sst_nodes;
     }
 }
-
-
-// void LsmTree::SortMergeWritePreviousLevel(vector<BTreeSSTable> *nodes, int current_level) {
-//     const auto result = SortMerge(nodes);
-//
-//     if (levelled_sst_.size() <= current_level + 1) {
-//         levelled_sst_.resize(current_level + 2);
-//     }
-//
-//     auto &next_level = levelled_sst_[current_level + 1];
-//
-//     const string db_name = SSTCounter::GetInstance().GetDbName();
-//     auto new_sst_nodes = BTreeSSTable(db_name, true);
-//
-//     nodes->clear();
-//     next_level.push_back(new_sst_nodes);
-//
-//     // Generate a new SST in storage
-//     string file_path = new_sst_nodes.FlushToStorage(&result);
-// }
 
 // Sort Merge every two SSTs in the final level
 void LsmTree::SortMergeLastLevel() {
@@ -188,36 +149,25 @@ void LsmTree::SortMergeLastLevel() {
     if (last_level_nodes.size() >= 2) {
         const auto result = SortMerge(&last_level_nodes);
 
-        for (auto &node: levelled_sst_[kLevelToApplyDostoevsky]) {
-            DeleteFile(node.file_path_);
+        for (const auto &node: levelled_sst_[kLevelToApplyDostoevsky]) {
+            DeleteFile(node->file_path_);
         }
         levelled_sst_[kLevelToApplyDostoevsky].clear();
 
         // Name of SST should always be BTree_lastlevel_0.bin
         const string db_name = SSTCounter::GetInstance().GetDbName();
-        auto new_sst_nodes = BTreeSSTable(db_name, true, kLevelToApplyDostoevsky);
+        const auto new_sst_nodes = new BTreeSSTable(db_name, true, kLevelToApplyDostoevsky);
         levelled_sst_[kLevelToApplyDostoevsky].push_back(new_sst_nodes);
 
         // Generate a new SST in storage
-        string file_path = new_sst_nodes.FlushToStorage(&result);
+        string file_path = new_sst_nodes->FlushToStorage(&result);
+
+        delete new_sst_nodes;
     }
 }
 
-// void LsmTree::SortMergeWriteLastLevel(vector<BTreeSSTable> *nodes) {
-//     const auto result = SortMerge(nodes);
-//
-//     const string db_name = SSTCounter::GetInstance().GetDbName();
-//     auto new_sst_nodes = BTreeSSTable(db_name, true);
-//
-//     nodes->clear();
-//     nodes->push_back(new_sst_nodes);
-//
-//     // Generate a new SST in storage
-//     string file_path = new_sst_nodes.FlushToStorage(&result);
-// }
-
-vector<vector<BTreeSSTable>> LsmTree::ReadSSTsFromStorage() {
-    vector<vector<BTreeSSTable>> levels;
+vector<vector<BTreeSSTable *>> LsmTree::ReadSSTsFromStorage() {
+    vector<vector<BTreeSSTable *>> levels;
     vector<int64_t> level_counters;
 
     auto &sst_counter = SSTCounter::GetInstance();
@@ -239,7 +189,7 @@ vector<vector<BTreeSSTable>> LsmTree::ReadSSTsFromStorage() {
                 level_counters.resize(level + 1, 0);
             }
 
-            BTreeSSTable sst(db_name + "/" + filename, false);
+            auto sst = new BTreeSSTable(db_name + "/" + filename, false);
             levels[level].push_back(sst);
 
             level_counters[level] = max(level_counters[level], index + 1);
@@ -247,10 +197,9 @@ vector<vector<BTreeSSTable>> LsmTree::ReadSSTsFromStorage() {
         }
     }
 
-    // Sort the SSTs in each level
+    // Sort the SSTs in each level, the newest SST comes first
     for (auto &level: levels) {
-        sort(level.begin(), level.end(),
-             [](const BTreeSSTable &a, const BTreeSSTable &b) { return a.file_path_ < b.file_path_; });
+        ranges::sort(level, [](const BTreeSSTable *a, const BTreeSSTable *b) { return a->file_path_ > b->file_path_; });
     }
 
     return levels;
@@ -275,6 +224,23 @@ void LsmTree::OrderLsmTree() {
         SortMergeLastLevel();
     }
 }
+
+optional<int64_t> LsmTree::Get(int64_t key) const {
+    // Find in SSTs from the lowest level to the highest level
+    // In the same level, find from the newest to the oldest
+    for (auto &current_level: levelled_sst_) {
+        for (const auto sst: current_level) {
+            auto value = sst->Get(key);
+            if (value.has_value()) {
+                return value;
+            }
+        }
+    }
+
+    return nullopt;
+}
+
+vector<pair<int64_t, int64_t>> LsmTree::Scan(int64_t start_key, int64_t end_key) const {}
 
 void LsmTree::DeleteFile(const string &file_path) {
     try {

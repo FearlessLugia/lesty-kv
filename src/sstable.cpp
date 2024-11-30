@@ -19,7 +19,8 @@ using namespace std;
 SSTable::SSTable(const filesystem::path &file_path) : file_path_(file_path) {
     fd_ = open(file_path.c_str(), F_NOCACHE | O_RDONLY);
     if (fd_ < 0) {
-        throw std::runtime_error("Failed to open SSTable file.");
+        cerr << "  Failed to open SSTable file" << endl;
+        return;
     }
 
     file_size_ = GetFileSize();
@@ -29,6 +30,7 @@ SSTable::SSTable(const filesystem::path &file_path) : file_path_(file_path) {
 SSTable::~SSTable() {
     if (fd_ >= 0) {
         close(fd_);
+        LOG("  Closed file: " << file_path_);
     }
 }
 
@@ -92,17 +94,16 @@ Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) co
     const size_t end_pos = file_path_.rfind(".bin");
     const string sst_name = file_path_.substr(start_pos, end_pos - start_pos);
 
-    string page_id = sst_name + "_" + to_string(offset);
+    const string page_id = sst_name + "_" + to_string(offset);
 
-    auto buffer_pool = BufferPoolManager::GetInstance();
+    const auto buffer_pool = BufferPoolManager::GetInstance();
     Page *exist_page = buffer_pool->Get(page_id);
     if (exist_page != nullptr) {
         return exist_page;
     }
 
     // If the page is not in the buffer pool, read it from disk
-    char buffer[kPageSize];
-    memset(buffer, 0, sizeof(buffer));
+    char buffer[kPageSize] = {};
 
     // Align the offset to the beginning of the page
     const off_t aligned_offset = offset - (offset % kPageSize);
@@ -160,12 +161,10 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
         const int64_t last_key = data[(num_pairs - 1) * 2];
 
         if (key == first_key) {
-            ::close(fd_);
             LOG("\t\tFound key " << key << " in " << file_path_);
             return data[1];
         }
         if (key == last_key) {
-            ::close(fd_);
             LOG("\t\tFound key " << key << " in " << file_path_);
             return data[num_pairs * 2 - 1];
         }
@@ -180,7 +179,6 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
                 const int64_t mid_key = data[page_mid * 2];
 
                 if (mid_key == key) {
-                    ::close(fd_);
                     LOG("\t\tFound key " << key << " in " << file_path_);
                     return data[page_mid * 2 + 1];
                 }
@@ -192,7 +190,6 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
                 }
             }
 
-            ::close(fd_);
             return nullopt;
         }
 
@@ -204,7 +201,6 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
     }
 
     LOG("  2 Could not find key " << key << " in " << file_path_);
-    ::close(fd_);
     return nullopt;
 }
 

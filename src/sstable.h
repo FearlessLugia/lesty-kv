@@ -33,17 +33,17 @@ public:
 
 protected:
     off_t GetFileSize() const;
-    void InitialKeyRange();
+    virtual void InitialKeyRange();
 
     bool ReadEntry(const char *buffer, size_t buffer_size, size_t &pos, pair<int64_t, int64_t> &entry) const;
 
     // Returns the offset of startKey or nullopt if not found
-    optional<int64_t> BinarySearch(const int64_t key) const;
+    virtual optional<int64_t> BinarySearch(const int64_t key) const;
 
     // Returns the offset of startKey or its upper bound if not found
-    int64_t BinarySearchUpperbound(const int64_t key, bool is_sequential_flooding) const;
+    virtual int64_t BinarySearchUpperbound(const int64_t key, bool is_sequential_flooding) const;
 
-    vector<pair<int64_t, int64_t>> LinearSearchToEndKey(off_t start_offset, int64_t start_key, int64_t end_key,
+    virtual vector<pair<int64_t, int64_t>> LinearSearchToEndKey(off_t start_offset, int64_t start_key, int64_t end_key,
                                                         bool is_sequential_flooding) const;
 };
 

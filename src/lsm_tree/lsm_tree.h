@@ -19,7 +19,7 @@ struct HeapNode {
             return key > other.key;
         }
 
-        // When same key, smaller sst_id has higher priority
+        // When same key, larger sst_id has higher priority
         return sst_id < other.sst_id;
     }
 };
@@ -31,27 +31,29 @@ class LsmTree {
     LsmTree &operator=(const LsmTree &) = delete;
 
 public:
-    vector<vector<BTreeSSTable>> levelled_sst_;
+    vector<vector<BTreeSSTable *>> levelled_sst_;
 
     static LsmTree &GetInstance();
 
-    vector<int64_t> SortMerge(vector<BTreeSSTable> *ssts);
-    void AddSst(BTreeSSTable sst);
+    vector<int64_t> SortMerge(vector<BTreeSSTable *> *ssts);
+    void AddSst(BTreeSSTable *sst);
 
     void SortMergePreviousLevel(int64_t current_level);
     void DeleteFile(const std::string &file_path);
 
     void SortMergeLastLevel();
 
-    void SortMergeWritePreviousLevel(vector<BTreeSSTable> *nodes, int current_level);
-
-    void SortMergeWriteLastLevel(vector<BTreeSSTable> *nodes);
-
-    vector<vector<BTreeSSTable>> ReadSSTsFromStorage();
+    vector<vector<BTreeSSTable *>> ReadSSTsFromStorage();
 
     void BuildLsmTree();
 
     void OrderLsmTree();
+
+    void Put(int64_t key, int64_t value);
+
+    optional<int64_t> Get(int64_t key) const;
+
+    vector<pair<int64_t, int64_t>> Scan(int64_t start_key, int64_t end_key) const;
 };
 
 
