@@ -13,7 +13,15 @@ struct HeapNode {
     size_t page_index; // index of int64_t inside the current page
     size_t sst_id;
 
-    bool operator>(const HeapNode &other) const { return key > other.key; }
+    bool operator>(const HeapNode &other) const {
+        // Smaller Key has higher priority
+        if (key != other.key) {
+            return key > other.key;
+        }
+
+        // When same key, smaller sst_id has higher priority
+        return sst_id < other.sst_id;
+    }
 };
 
 class LsmTree {
@@ -44,7 +52,6 @@ public:
     void BuildLsmTree();
 
     void OrderLsmTree();
-
 };
 
 

@@ -21,8 +21,10 @@ class SSTCounter {
 
 public:
     static SSTCounter &GetInstance();
+    void SetDbName(const string &db_name);
 
-    void Initialize(const string &db_name);
+    void Initialize();
+    void SetLevelCounters(int64_t level, int64_t counter);
 
     string GetDbName() const;
 

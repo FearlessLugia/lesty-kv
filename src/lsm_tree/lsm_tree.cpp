@@ -51,22 +51,16 @@ vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable> *ssts) {
         }
     }
 
-    size_t last_sst_id = -1;
     while (!min_heap.empty()) {
         auto [key, value, page_index, sst_id] = min_heap.top();
         min_heap.pop();
 
-        if (!result.empty() && result[result.size() - 2] == key) {
-            // When key is duplicated, update value with the one from the latest SST
-            if (sst_id > last_sst_id) {
-                result.back() = value;
-            }
-        } else {
-            // Add to the result
+        // Add to the result
+        // When key is duplicated, its sst_id would surely be smaller than the previous one
+        if (result.empty() || result[result.size() - 2] != key) {
             result.push_back(key);
             result.push_back(value);
         }
-        last_sst_id = sst_id;
 
         // Update min-heap
         auto &sst = (*ssts)[sst_id];
@@ -125,6 +119,9 @@ void LsmTree::SortMergePreviousLevel(int64_t current_level) {
             DeleteFile(node.file_path_);
         }
         levelled_sst_[current_level].clear();
+
+        // Current level cleared, set current level counter to 0
+        SSTCounter::GetInstance().SetLevelCounters(current_level, 0);
 
         // and then write to the next level
         if (levelled_sst_.size() == current_level + 1) {
@@ -248,6 +245,12 @@ vector<vector<BTreeSSTable>> LsmTree::ReadSSTsFromStorage() {
             level_counters[level] = max(level_counters[level], index + 1);
             sst_counter.SetLevelCounters(level, level_counters[level]);
         }
+    }
+
+    // Sort the SSTs in each level
+    for (auto &level: levels) {
+        sort(level.begin(), level.end(),
+             [](const BTreeSSTable &a, const BTreeSSTable &b) { return a.file_path_ < b.file_path_; });
     }
 
     return levels;
