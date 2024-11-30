@@ -42,7 +42,7 @@ public:
 
     // void FlushToSst();
 
-    void FlushToMemtable() const;
+    void FlushFromMemtable() const;
 };
 
 #endif // DATABASE_H

@@ -49,33 +49,11 @@ void Database::Open(const string &db_name) {
     LsmTree::GetInstance();
 }
 
-
-vector<fs::path> Database::GetSortedSsts(const string &path) {
-    vector<filesystem::path> ssts;
-    regex filename_pattern;
-    filename_pattern = R"(btree(\d+)\.bin)";
-
-    for (const auto &entry: fs::directory_iterator(path)) {
-        if (entry.is_regular_file() && regex_match(entry.path().filename().string(), filename_pattern)) {
-            ssts.push_back(entry.path());
-        }
-    }
-
-    ranges::sort(ssts, [](const fs::path &a, const fs::path &b) {
-        const auto time_a = fs::last_write_time(a);
-        const auto time_b = fs::last_write_time(b);
-
-        return time_a > time_b;
-    });
-
-    return ssts;
-}
-
 void Database::Close() {
     if (memtable_->Size() > 0) {
         LOG("Closing database and flushing memtable to SSTs: " << db_name_);
 
-        FlushToMemtable();
+        FlushFromMemtable();
         memtable_->clear();
     }
 
@@ -90,7 +68,7 @@ void Database::Put(const int64_t key, const int64_t value) {
 
     if (memtable_->Size() >= memtable_->memtable_size) {
         LOG(" ┌Memtable is full, flushing to SST");
-        FlushToMemtable();
+        FlushFromMemtable();
         memtable_->clear();
     }
 }
@@ -106,18 +84,15 @@ optional<int64_t> Database::Get(const int64_t key) const {
 
     // Find in LSM-Tree
     const LsmTree &lsm_tree = LsmTree::GetInstance();
-    return lsm_tree.Get(key);
 
-    // find in SSTs from the newest to the oldest
-    auto ssts = GetSortedSsts(db_name_);
-
-    for (const auto &sst_path: ssts) {
-        LOG(" Get in " << sst_path.string());
-
-        const auto sst = SSTable(sst_path);
-        auto sst_value = sst.Get(key);
-        if (sst_value.has_value()) {
-            return sst_value;
+    // Find in SSTs from the lowest level to the highest level
+    // In the same level, find from the newest to the oldest
+    for (auto &current_level: lsm_tree.levelled_sst_) {
+        for (const auto sst: current_level) {
+            auto value = sst->Get(key);
+            if (value.has_value()) {
+                return value;
+            }
         }
     }
 
@@ -140,21 +115,22 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
         }
     }
 
-    // find in SSTs from the newest to the oldest
-    auto ssts = GetSortedSsts(db_name_);
-    // sstables_ = ssts;
+    // Find in LSM-Tree
+    const LsmTree &lsm_tree = LsmTree::GetInstance();
 
-    vector<pair<int64_t, int64_t>> values;
-    for (const auto &sst_path: ssts) {
-        LOG("\tScan in " << sst_path.string());
+    // Find in SSTs from the lowest level to the highest level
+    // In the same level, find from the newest to the oldest
+    for (auto &current_level: lsm_tree.levelled_sst_) {
+        for (const auto sst: current_level) {
+            LOG("\tScan in " << sst->file_path_);
 
-        const auto sst = SSTable(sst_path);
-        const auto values = sst.Scan(start_key, end_key);
-        // Update result and found_keys
-        for (const auto &[key, value]: values) {
-            if (!found_keys.contains(key)) {
-                result.emplace_back(key, value);
-                found_keys.insert(key);
+            const auto values = sst->Scan(start_key, end_key);
+            // Update result and found_keys
+            for (const auto &[key, value]: values) {
+                if (!found_keys.contains(key)) {
+                    result.emplace_back(key, value);
+                    found_keys.insert(key);
+                }
             }
         }
     }
@@ -164,30 +140,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
     return result;
 }
 
-// void Database::FlushToSst() {
-//     FlushToMemtable();
-//     return;
-//
-//     // Generate an increased-number-filename for the new SST file
-//     ostringstream file_name;
-//     // file_name << db_name_ << "/sst" << sst_counter_++ << ".bin";
-//
-//     ofstream outfile(file_name.str(), ios::binary);
-//     if (!outfile) {
-//         cerr << "  File could not be opened" << endl;
-//         exit(1);
-//     }
-//
-//     for (const auto &[key, value]: memtable_->TraversePair()) {
-//         outfile.write(reinterpret_cast<const char *>(&key), sizeof(key));
-//         outfile.write(reinterpret_cast<const char *>(&value), sizeof(value));
-//     }
-//
-//     // LOG("  Memtable flushed to SST: " << file_name.str());
-//     outfile.close();
-// }
-
-void Database::FlushToMemtable() const {
+void Database::FlushFromMemtable() const {
     // Flush to level 0 of LSM-Tree
     const string db_name = SSTCounter::GetInstance().GetDbName();
     auto b_tree_sst = new BTreeSSTable(db_name, true);
