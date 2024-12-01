@@ -26,6 +26,7 @@ struct HeapNode {
 
 class LsmTree {
     LsmTree();
+    ~LsmTree();
 
     LsmTree(const LsmTree &) = delete;
     LsmTree &operator=(const LsmTree &) = delete;
@@ -48,12 +49,6 @@ public:
     void BuildLsmTree();
 
     void OrderLsmTree();
-
-    void Put(int64_t key, int64_t value);
-
-    optional<int64_t> Get(int64_t key) const;
-
-    vector<pair<int64_t, int64_t>> Scan(int64_t start_key, int64_t end_key) const;
 };
 
 

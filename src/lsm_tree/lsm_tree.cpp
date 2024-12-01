@@ -18,6 +18,16 @@ namespace fs = std::filesystem;
 
 LsmTree::LsmTree() { BuildLsmTree(); }
 
+LsmTree::~LsmTree() {
+    for (auto &level: levelled_sst_) {
+        for (auto &sst: level) {
+            delete sst;
+        }
+        level.clear();
+    }
+    levelled_sst_.clear();
+}
+
 LsmTree &LsmTree::GetInstance() {
     static LsmTree instance;
     return instance;
@@ -117,11 +127,14 @@ void LsmTree::AddSst(BTreeSSTable *sst) {
 void LsmTree::SortMergePreviousLevel(int64_t current_level) {
     // If the current level is full
     if (levelled_sst_[current_level].size() == pow(kLsmRatio, current_level + 1)) {
+        LOG(" Sort Merge Previous Level " << current_level);
+
         // needs to do the merge
         const auto result = SortMerge(&levelled_sst_[current_level], false);
 
         for (const auto &node: levelled_sst_[current_level]) {
             DeleteFile(node->file_path_);
+            delete node;
         }
         levelled_sst_[current_level].clear();
 
@@ -143,8 +156,6 @@ void LsmTree::SortMergePreviousLevel(int64_t current_level) {
         string file_path = new_sst_nodes->FlushToStorage(&result);
 
         levelled_sst_[next_level].push_back(new_sst_nodes);
-
-        delete new_sst_nodes;
     }
 }
 
@@ -166,8 +177,6 @@ void LsmTree::SortMergeLastLevel() {
 
         // Generate a new SST in storage
         string file_path = new_sst_nodes->FlushToStorage(&result);
-
-        delete new_sst_nodes;
     }
 }
 
