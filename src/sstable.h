@@ -25,6 +25,8 @@ public:
     SSTable() = default;
     ~SSTable();
 
+    void CloseFile();
+
     Page *GetPage(off_t offset, bool is_sequential_flooding = false) const;
 
     optional<int64_t> Get(const int64_t key) const;

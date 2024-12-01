@@ -43,11 +43,18 @@ vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts, bool should_dis
 
     const size_t n = ssts->size();
     vector<vector<int64_t>> current_pages(n); // current page data
-    vector<off_t> offsets(n, kPageNumReserveBTree * kPageSize); // current offset
 
+    vector<off_t> offsets(n, 0); // current offset
+    // Read first page of each SSTable to get offset
     for (size_t i = 0; i < n; ++i) {
         auto &sst = (*ssts)[i];
         sst->fd_ = open(sst->file_path_.c_str(), O_RDONLY);
+        auto offset_page = sst->ReadOffset();
+        offsets[i] = offset_page * kPageSize;
+    }
+
+    for (size_t i = 0; i < n; ++i) {
+        auto &sst = (*ssts)[i];
         const auto &page = sst->GetPage(offsets[i]);
         if (page->GetSize() > 0) {
             if (!page->data_.empty()) {
@@ -133,8 +140,7 @@ void LsmTree::SortMergePreviousLevel(int64_t current_level) {
         const auto result = SortMerge(&levelled_sst_[current_level], false);
 
         for (const auto &node: levelled_sst_[current_level]) {
-            DeleteFile(node->file_path_);
-            delete node;
+            DeleteFile(node);
         }
         levelled_sst_[current_level].clear();
 
@@ -166,7 +172,7 @@ void LsmTree::SortMergeLastLevel() {
         const auto result = SortMerge(&last_level_nodes, true);
 
         for (const auto &node: levelled_sst_[kLevelToApplyDostoevsky]) {
-            DeleteFile(node->file_path_);
+            DeleteFile(node);
         }
         levelled_sst_[kLevelToApplyDostoevsky].clear();
 
@@ -239,8 +245,11 @@ void LsmTree::OrderLsmTree() {
     }
 }
 
-void LsmTree::DeleteFile(const string &file_path) {
+void LsmTree::DeleteFile(BTreeSSTable *sst) {
     try {
+        sst->CloseFile();
+
+        const string &file_path = sst->file_path_;
         if (fs::exists(file_path)) {
             // Remove the file
             if (fs::remove(file_path)) {
@@ -251,6 +260,8 @@ void LsmTree::DeleteFile(const string &file_path) {
         } else {
             cerr << "File does not exist: " << file_path << endl;
         }
+
+        delete sst;
     } catch (const fs::filesystem_error &e) {
         cerr << "Filesystem error: " << e.what() << endl;
     }

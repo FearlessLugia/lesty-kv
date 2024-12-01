@@ -30,7 +30,16 @@ SSTable::SSTable(const filesystem::path &file_path) : file_path_(file_path) {
 SSTable::~SSTable() {
     if (fd_ >= 0) {
         close(fd_);
-        LOG("  Closed file: " << file_path_);
+        LOG("  Closed file: " << file_path_ << " passively");
+        fd_ = -1;
+    }
+}
+
+void SSTable::CloseFile() {
+    if (fd_ >= 0) {
+        close(fd_);
+        LOG("  Closed file: " << file_path_ << " actively");
+        fd_ = -1;
     }
 }
 
@@ -222,7 +231,7 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
         // min key is larger than end key, scan from the beginning
         LOG("\t\tMin key " << min_key_ << " is larger than start key " << start_key << ", scan from the beginning");
 
-        start_offset = kPageNumReserveBTree * kPageSize;
+        start_offset = 0;
     } else {
         if (is_sequential_flooding) {
             LOG("  Scan range exceeds sequential flooding threshold, skipping buffer pool writes");
@@ -231,7 +240,7 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
         // else, binary search to find the upper bound of the start key
         start_offset = BinarySearchUpperbound(start_key, is_sequential_flooding);
     }
-    LOG("\t\t\tStart offset: " << start_offset);
+    // LOG("\t\t\tStart offset: " << start_offset);
 
 
     // Found start key, linear search to find end key

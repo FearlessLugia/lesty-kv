@@ -48,9 +48,13 @@ add_executable(kv-test
         tests/test_b_tree.cpp
         tests/test_lsm_tree.cpp)
 
+add_executable(kv-experiment
+        experiments/experiment.cpp
+)
 
 target_link_libraries(kv PUBLIC kv-lib)
 target_link_libraries(kv-test PUBLIC kv-lib)
+target_link_libraries(kv-experiment PUBLIC kv-lib)
 
 target_compile_options(kv-test PRIVATE
         $<$<CONFIG:Debug>:-g> # Debug mode

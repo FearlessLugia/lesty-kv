@@ -50,14 +50,8 @@ inline constexpr double kPageSequentialFlooding = kCoeffSequentialFlooding * kPa
 
 //------------ B-Tree SSTable ------------
 
-// // Number of children per root node in B-Tree
-// inline constexpr size_t kNumChildrenPerRoot = 2;
-//
-// // Number of children per internal node in B-Tree
-// inline constexpr size_t kNumChildrenPerInternal = 4;
-
-// Number of pages reserved for the first 2 layers nodes in B-Tree
-inline constexpr size_t kPageNumReserveBTree = 1 + 2;
+// Let B-Tree fan out be 1 page
+inline constexpr size_t kFanOut = kPagePairs; // 256
 
 
 //------------ LSM-Tree ------------
@@ -67,9 +61,11 @@ inline constexpr size_t kLsmRatio = 3;
 
 // Starting this level, apply Dostoevsky on LSM-Tree
 // So, level 0 needs 3 SSTables to merge
-// level 1 needs 9 SSTables to merge
-// level 2 needs 2 SSTables to merge
-inline constexpr size_t kLevelToApplyDostoevsky = 2;
+// Level 1 needs 9 SSTables to merge
+// Level 2 needs 27 SSTables to merge
+// ...
+// Level kLevelToApplyDostoevsky needs 2 SSTables to merge
+inline constexpr size_t kLevelToApplyDostoevsky = 4;
 
 
 #endif // CONSTANTS_H

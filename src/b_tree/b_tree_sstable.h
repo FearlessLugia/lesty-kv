@@ -22,6 +22,7 @@ public:
     string FlushToStorage(const vector<int64_t> *data);
 
     void GenerateBTreeLayers(vector<int64_t> prev_layer_nodes);
+    off_t ReadOffset() const;
 
 private:
     void InitialKeyRange() override;

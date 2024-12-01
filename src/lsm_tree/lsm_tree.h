@@ -40,7 +40,7 @@ public:
     void AddSst(BTreeSSTable *sst);
 
     void SortMergePreviousLevel(int64_t current_level);
-    void DeleteFile(const std::string &file_path);
+    void DeleteFile(BTreeSSTable *sst);
 
     void SortMergeLastLevel();
 
