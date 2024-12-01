@@ -79,6 +79,10 @@ optional<int64_t> Database::Get(const int64_t key) const {
     // Find in memtable
     const auto value = memtable_->Get(key);
     if (value.has_value()) {
+        // If the value is INT64_MIN, it means the key is deleted
+        if (value.value() == INT64_MIN) {
+            return nullopt;
+        }
         return value;
     }
 
@@ -91,6 +95,10 @@ optional<int64_t> Database::Get(const int64_t key) const {
         for (const auto sst: current_level) {
             auto value = sst->Get(key);
             if (value.has_value()) {
+                // If the value is INT64_MIN, it means the key is deleted
+                if (value.value() == INT64_MIN) {
+                    return nullopt;
+                }
                 return value;
             }
         }
@@ -109,6 +117,11 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
     vector<pair<int64_t, int64_t>> memtable_results = memtable_->Scan(start_key, end_key);
     // Update result and found_keys
     for (const auto &[key, value]: memtable_results) {
+        // If the value is INT64_MIN, it means the key is deleted
+        if (value == INT64_MIN) {
+            continue;
+        }
+
         if (!found_keys.contains(key)) {
             result.emplace_back(key, value);
             found_keys.insert(key);
@@ -127,6 +140,11 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
             const auto values = sst->Scan(start_key, end_key);
             // Update result and found_keys
             for (const auto &[key, value]: values) {
+                // If the value is INT64_MIN, it means the key is deleted
+                if (value == INT64_MIN) {
+                    continue;
+                }
+
                 if (!found_keys.contains(key)) {
                     result.emplace_back(key, value);
                     found_keys.insert(key);
@@ -138,6 +156,12 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
     ranges::sort(result, [](const auto &a, const auto &b) { return a.first < b.first; });
 
     return result;
+}
+
+void Database::Delete(int64_t key) const {
+    // Set tombstone in memtable
+    // This is enough for the delete implementation
+    memtable_->Delete(key);
 }
 
 void Database::FlushFromMemtable() const {

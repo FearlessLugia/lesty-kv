@@ -19,12 +19,6 @@ class Database {
     Memtable *memtable_;
     BufferPool *buffer_pool_;
 
-    // vector<SSTable> *sstables_;
-
-    // vector<fs::path> sstables_;
-
-    static vector<fs::path> GetSortedSsts(const string &path);
-
 public:
     explicit Database(const size_t memtable_size);
 
@@ -39,6 +33,8 @@ public:
     optional<int64_t> Get(int64_t key) const;
 
     vector<pair<int64_t, int64_t>> Scan(int64_t start_key, int64_t end_key) const;
+
+    void Delete(int64_t key) const;
 
     // void FlushToSst();
 

@@ -35,7 +35,7 @@ public:
 
     static LsmTree &GetInstance();
 
-    vector<int64_t> SortMerge(vector<BTreeSSTable *> *ssts);
+    vector<int64_t> SortMerge(vector<BTreeSSTable *> *ssts, bool should_dispose_tombstone);
     void AddSst(BTreeSSTable *sst);
 
     void SortMergePreviousLevel(int64_t current_level);

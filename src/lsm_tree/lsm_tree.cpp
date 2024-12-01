@@ -23,7 +23,7 @@ LsmTree &LsmTree::GetInstance() {
     return instance;
 }
 
-vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts) {
+vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts, bool should_dispose_tombstone) {
     LOG(" ┌Sort Merge " << (*ssts)[0]->file_path_ << " to " << (*ssts)[ssts->size() - 1]->file_path_);
 
     vector<int64_t> result;
@@ -54,6 +54,11 @@ vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts) {
     while (!min_heap.empty()) {
         auto [key, value, page_index, sst_id] = min_heap.top();
         min_heap.pop();
+
+        // If largest level, should dispose tombstone
+        if (should_dispose_tombstone && value == INT64_MIN) {
+            continue;
+        }
 
         // Add to the result
         // When key is duplicated, its sst_id would surely be smaller than the previous one
@@ -113,7 +118,7 @@ void LsmTree::SortMergePreviousLevel(int64_t current_level) {
     // If the current level is full
     if (levelled_sst_[current_level].size() == pow(kLsmRatio, current_level + 1)) {
         // needs to do the merge
-        const auto result = SortMerge(&levelled_sst_[current_level]);
+        const auto result = SortMerge(&levelled_sst_[current_level], false);
 
         for (const auto &node: levelled_sst_[current_level]) {
             DeleteFile(node->file_path_);
@@ -147,7 +152,7 @@ void LsmTree::SortMergePreviousLevel(int64_t current_level) {
 void LsmTree::SortMergeLastLevel() {
     auto last_level_nodes = levelled_sst_[kLevelToApplyDostoevsky];
     if (last_level_nodes.size() >= 2) {
-        const auto result = SortMerge(&last_level_nodes);
+        const auto result = SortMerge(&last_level_nodes, true);
 
         for (const auto &node: levelled_sst_[kLevelToApplyDostoevsky]) {
             DeleteFile(node->file_path_);
@@ -224,23 +229,6 @@ void LsmTree::OrderLsmTree() {
         SortMergeLastLevel();
     }
 }
-
-optional<int64_t> LsmTree::Get(int64_t key) const {
-    // Find in SSTs from the lowest level to the highest level
-    // In the same level, find from the newest to the oldest
-    for (auto &current_level: levelled_sst_) {
-        for (const auto sst: current_level) {
-            auto value = sst->Get(key);
-            if (value.has_value()) {
-                return value;
-            }
-        }
-    }
-
-    return nullopt;
-}
-
-vector<pair<int64_t, int64_t>> LsmTree::Scan(int64_t start_key, int64_t end_key) const {}
 
 void LsmTree::DeleteFile(const string &file_path) {
     try {

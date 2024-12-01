@@ -7,9 +7,9 @@
 
 using namespace std;
 
-void Memtable::Put(const int64_t &key, const int64_t &value) { table_[key] = value; }
+void Memtable::Put(const int64_t key, const int64_t value) { table_[key] = value; }
 
-optional<int64_t> Memtable::Get(const int64_t &key) const {
+optional<int64_t> Memtable::Get(const int64_t key) const {
     const auto it = table_.find(key);
     if (it != table_.end()) {
         return it->second;
@@ -17,16 +17,18 @@ optional<int64_t> Memtable::Get(const int64_t &key) const {
     return nullopt;
 }
 
-vector<pair<int64_t, int64_t>> Memtable::Scan(const int64_t &startKey, const int64_t &endKey) const {
+vector<pair<int64_t, int64_t>> Memtable::Scan(const int64_t startKey, const int64_t endKey) const {
     vector<pair<int64_t, int64_t>> result;
-    const auto startIt = table_.lower_bound(startKey);
-    const auto endIt = table_.upper_bound(endKey);
+    const auto start_it = table_.lower_bound(startKey);
+    const auto end_it = table_.upper_bound(endKey);
 
-    for (auto it = startIt; it != endIt; ++it) {
+    for (auto it = start_it; it != end_it; ++it) {
         result.emplace_back(it->first, it->second);
     }
     return result;
 }
+
+void Memtable::Delete(const int64_t key) { Put(key, INT64_MIN); }
 
 vector<pair<int64_t, int64_t>> Memtable::TraversePair() const {
     vector<pair<int64_t, int64_t>> result;
