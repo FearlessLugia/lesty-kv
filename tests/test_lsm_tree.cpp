@@ -11,86 +11,51 @@
 class TestLsmTree : public TestBase {
     static bool TestMultipleMergeSort() {
         Database db(kMemtableSize);
-        const string db_name = "db1";
+        const string db_name = "test_db";
+        filesystem::remove_all(db_name);
+
         db.Open(db_name);
 
-        const auto a = new BTreeSSTable("db1/btree3.bin", false);
-        const auto b = new BTreeSSTable("db1/btree4.bin", false);
-        const auto c = new BTreeSSTable("db1/btree5.bin", false);
+        const auto a = new BTreeSSTable(db_name, true);
+        const auto b = new BTreeSSTable(db_name, true);
+        const auto c = new BTreeSSTable(db_name, true);
 
-        LsmTree lsm_tree = LsmTree();
-        const auto result = lsm_tree.SortMerge(new vector{a, b, c});
+        vector<int64_t> data;
+        for (auto i = 1; i <= 5000; i++) {
+            data.push_back(i);
+            data.push_back(i * 10);
+        }
+        a->FlushToStorage(&data);
 
-        assert(result.size() == 2048);
-        assert(result[0] == 1);
-        assert(result[1] == -10);
+        data.clear();
+        for (auto i = 400; i <= 600; i++) {
+            data.push_back(i);
+            data.push_back(i * 100);
+        }
+        b->FlushToStorage(&data);
 
-        assert(result[998] == 500);
-        assert(result[999] == -5000);
+        data.clear();
+        for (auto i = 500; i <= 1000; i++) {
+            data.push_back(i);
+            data.push_back(-i);
+        }
+        c->FlushToStorage(&data);
 
-        assert(result[2046] == 1024);
-        assert(result[2047] == -10240);
-
-        // for (auto entry: result) {
-        //     cout << entry << endl;
-        // }
-
-        delete a;
-        delete b;
-        delete c;
-
-        return true;
-    }
-
-    static bool TestMultipleMergeSort2() {
-        Database db(kMemtableSize);
-        const string db_name = "db1";
-        db.Open(db_name);
-
-        const auto a = new BTreeSSTable("db1/btree0.bin", false);
-        const auto b = new BTreeSSTable("db1/btree1.bin", false);
-        const auto c = new BTreeSSTable("db1/btree2.bin", false);
-
-        LsmTree lsm_tree = LsmTree();
-        const auto result = lsm_tree.SortMerge(new vector{a, b, c});
+        auto &lsm_tree = LsmTree::GetInstance();
+        const auto result = lsm_tree.SortMerge(new vector{a, b, c}, true);
 
         assert(result.size() == 10000);
+        assert(result[0] == 1);
+        assert(result[1] == 10);
 
-        // for (auto &[frt, snd]: result) {
-        //     cout << frt << " " << snd << endl;
-        // }
+        assert(result[798] == 400);
+        assert(result[799] == 40000);
 
-        delete a;
-        delete b;
-        delete c;
+        assert(result[998] == 500);
+        assert(result[999] == -500);
 
-        return true;
-    }
-
-    static bool TestMergeSortALsmTree() {
-        Database db(kMemtableSize);
-        const string db_name = "db1";
-        db.Open(db_name);
-
-        const auto a = new BTreeSSTable("db1/btree0.bin", false);
-        const auto b = new BTreeSSTable("db1/btree1.bin", false);
-        const auto c = new BTreeSSTable("db1/btree2.bin", false);
-        vector input = {a, b, c};
-
-        LsmTree lsm_tree = LsmTree();
-        lsm_tree.level_ = 1;
-        lsm_tree.levelled_sst_ = {input};
-        lsm_tree.SortMergePreviousLevel();
-
-        assert(lsm_tree.levelled_sst_.size() == 2);
-        assert(lsm_tree.levelled_sst_[0].size() == 0);
-        assert(lsm_tree.levelled_sst_[1].size() == 1);
-        assert(lsm_tree.levelled_sst_[1][0]->max_key_ == 5000);
-
-
-        // for (auto &[frt, snd]: result) {
-        //     cout << frt << " " << snd << endl;
-        // }
+        assert(result[9998] == 5000);
+        assert(result[9999] == 50000);
 
         delete a;
         delete b;
@@ -99,9 +64,10 @@ class TestLsmTree : public TestBase {
         return true;
     }
 
-    static bool TestLsmTreeIntegrated() {
+    static bool TestBuildLsmTree() {
         Database db(kMemtableSize);
-        const string db_name = "db1";
+        const string db_name = "test_db";
+        filesystem::remove_all(db_name);
 
         db.Open(db_name);
         for (auto i = 1; i <= 5000; ++i) {
@@ -110,33 +76,32 @@ class TestLsmTree : public TestBase {
         db.Close();
 
         db.Open(db_name);
-        for (auto i = 500; i <= 1000; ++i) {
-            db.Put(i, i * 100);
+
+        LsmTree &lsm_tree = LsmTree::GetInstance();
+        assert(lsm_tree.levelled_sst_.size() == 2);
+        assert(lsm_tree.levelled_sst_[0].size() == 0);
+        assert(lsm_tree.levelled_sst_[1].size() == 1);
+        assert(lsm_tree.levelled_sst_[1][0]->max_key_ == 5000);
+
+        return true;
+    }
+
+    static bool TestLsmTreeIntegrated() {
+        Database db(kMemtableSize);
+        const string db_name = "test_db1";
+        filesystem::remove_all(db_name);
+
+        db.Open(db_name);
+        for (auto i = 1; i <= 5000; ++i) {
+            db.Put(i, i * 10);
         }
         db.Close();
 
         db.Open(db_name);
-        for (auto i = 400; i <= 600; ++i) {
-            db.Put(i, i * 1000);
-        }
-        db.Close();
 
-        db.Open(db_name);
-        for (auto i = 1; i <= 1024; ++i) {
-            db.Put(i, -i * 10);
-        }
-        db.Close();
-
-        db.Open(db_name);
-        for (auto i = 900; i <= 1100; ++i) {
-            db.Put(i, -i * 100);
-        }
-        db.Close();
-
-        db.Open(db_name);
-
-
-
+        constexpr int64_t key = 1024;
+        const optional<int64_t> value = db.Get(key);
+        assert(value.has_value() && value.value() == 10240);
 
         return true;
     }
@@ -144,9 +109,8 @@ class TestLsmTree : public TestBase {
 public:
     bool RunTests() override {
         bool result = true;
-        // result &= AssertTrue(TestMultipleMergeSort, "TestLsmTree::TestMultipleMergeSort");
-        // result &= AssertTrue(TestMultipleMergeSort2, "TestLsmTree::TestMultipleMergeSort2");
-        // result &= AssertTrue(TestMergeSortALsmTree, "TestLsmTree::TestMergeSortALsmTree");
+        result &= AssertTrue(TestMultipleMergeSort, "TestLsmTree::TestMultipleMergeSort");
+        result &= AssertTrue(TestBuildLsmTree, "TestLsmTree::TestBuildLsmTree");
         result &= AssertTrue(TestLsmTreeIntegrated, "TestLsmTree::TestLsmTreeIntegrated");
         return result;
     }
