@@ -18,18 +18,21 @@
 
 namespace fs = std::filesystem;
 
-BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new, const int64_t level) :
-    SSTable() {
+BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new, const int64_t level) : SSTable() {
     if (create_new) {
         // If creation, generate a new file name
         const string new_file_name = SSTCounter::GetInstance().GenerateFileName(level);
         file_path_ = fs::path(db_name) / new_file_name;
-        fd_ = -1;
+
+        fd_ = open(file_path_.c_str(), O_RDWR | O_CREAT, 0644);
+        if (fd_ < 0) {
+            throw std::runtime_error("Failed to open SSTable file: " + file_path_);
+        }
     } else {
         // If not creation, use the given file name
         file_path_ = fs::path(db_name);
 
-        fd_ = open(file_path_.c_str(), O_RDONLY | O_CREAT, 0644);
+        fd_ = open(file_path_.c_str(), O_RDWR | O_CREAT, 0644);
         if (fd_ < 0) {
             throw std::runtime_error("Failed to open SSTable file: " + file_path_);
         }
@@ -71,6 +74,8 @@ void BTreeSSTable::InitialKeyRange() {
 
 
 void BTreeSSTable::WritePage(const off_t offset, const Page *page, const bool is_final_page = false) const {
+    fd_ = EnsureFileOpen();
+
     LOG("  └Writing page " << page->id_);
 
     // Write the page to the file
@@ -97,13 +102,14 @@ void BTreeSSTable::WritePage(const off_t offset, const Page *page, const bool is
 
 
 string BTreeSSTable::FlushToStorage(const vector<int64_t> *data) {
-    CloseFile();
+    // CloseFile();
 
-    fd_ = open(file_path_.c_str(), O_WRONLY | O_CREAT, 0644);
-    if (fd_ < 0) {
-        cerr << "Failed to open file: " << file_path_ << " for writing: " << strerror(errno) << endl;
-        exit(1);
-    }
+    // fd_ = EnsureFileOpen();
+    // fd_ = open(file_path_.c_str(), O_RDWR | O_CREAT, 0644);
+    // if (fd_ < 0) {
+    //     cerr << "Failed to open file: " << file_path_ << " for writing: " << strerror(errno) << endl;
+    //     exit(1);
+    // }
 
     const size_t start_pos = file_path_.find('/') + 1;
     const size_t end_pos = file_path_.rfind(".bin");
@@ -270,7 +276,7 @@ off_t BTreeSSTable::ReadOffset() const {
 optional<int64_t> BTreeSSTable::BinarySearch(const int64_t key) const {
     const size_t num_pages = (file_size_ + kPageSize - 1) / kPageSize;
 
-    fd_ = open(file_path_.c_str(), O_RDONLY);
+    fd_ = open(file_path_.c_str(), O_RDWR | O_CREAT, 0644);
     const size_t page_num_reserve_btree = ReadOffset();
     size_t left = page_num_reserve_btree;
     size_t right = num_pages - 1;

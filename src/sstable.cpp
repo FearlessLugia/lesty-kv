@@ -16,23 +16,30 @@
 
 using namespace std;
 
-SSTable::SSTable(const filesystem::path &file_path) : file_path_(file_path) {
-    fd_ = open(file_path.c_str(), O_RDONLY); // F_NOCACHE for macOS / O_DIRECT for Linux
-    if (fd_ < 0) {
-        cerr << "  Failed to open SSTable file" << endl;
-        throw std::runtime_error("Failed to open SSTable file: " + file_path_);
-    }
-
-    file_size_ = GetFileSize();
-    SSTable::InitialKeyRange();
-}
-
 SSTable::~SSTable() {
     if (fd_ >= 0) {
         close(fd_);
         LOG("  Closed file: " << file_path_ << " passively");
         fd_ = -1;
     }
+}
+
+int SSTable::EnsureFileOpen() const {
+    if (fd_ == -1) {
+        fd_ = open(file_path_.c_str(), O_RDWR);
+        if (fd_ < 0) {
+            throw std::runtime_error("Failed to open SSTable file: " + file_path_);
+        }
+    } else {
+        if (fcntl(fd_, F_GETFD) == -1) {
+            close(fd_);
+            fd_ = open(file_path_.c_str(), O_RDWR);
+            if (fd_ < 0) {
+                throw std::runtime_error("Failed to reopen SSTable file: " + file_path_);
+            }
+        }
+    }
+    return fd_;
 }
 
 void SSTable::CloseFile() const {

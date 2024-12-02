@@ -93,8 +93,10 @@ optional<int64_t> Database::Get(const int64_t key) const {
     for (auto &current_level: lsm_tree.levelled_sst_) {
         // In the same level, find from the newest to the oldest
         for (const auto sst: ranges::reverse_view(current_level)) {
-            sst->fd_ = open(sst->file_path_.c_str(), O_RDONLY);
+            sst->fd_ = sst->EnsureFileOpen();
             auto get_value = sst->Get(key);
+            sst->fd_ = close(sst->fd_);
+
             if (get_value.has_value()) {
                 // If the value is INT64_MIN, it means the key is deleted
                 if (get_value.value() == INT64_MIN) {
@@ -137,8 +139,10 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
         // In the same level, find from the newest to the oldest
         for (const auto sst: ranges::reverse_view(current_level)) {
             LOG("\tScan in " << sst->file_path_);
-            sst->fd_ = open(sst->file_path_.c_str(), O_RDONLY);
+            sst->fd_ = sst->EnsureFileOpen();
             const auto values = sst->Scan(start_key, end_key);
+            sst->fd_ = close(sst->fd_);
+
             // Update result and found_keys
             for (const auto &[key, value]: values) {
                 // If the value is INT64_MIN, it means the key is deleted

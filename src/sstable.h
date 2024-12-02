@@ -21,10 +21,10 @@ public:
     int64_t min_key_;
     int64_t max_key_;
 
-    SSTable(const filesystem::path &file_path);
     SSTable() = default;
     ~SSTable();
 
+    int EnsureFileOpen() const;
     void CloseFile() const;
 
     Page *GetPage(off_t offset, bool is_sequential_flooding = false) const;

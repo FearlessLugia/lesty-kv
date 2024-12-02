@@ -155,7 +155,7 @@ void Experiment() {
 
 int main() {
     // When only performing Binary search on B-Tree,
-    // Experiment 2 is exactly the same as in the Experiment 3 (Get Throughput)
+    // Experiment 2 is exactly the same as that of the Get Throughput in Experiment 3
 
     Experiment();
 }
