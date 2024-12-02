@@ -3,6 +3,7 @@
 //
 
 #include "lru.h"
+#include "../../../utils/log.h"
 
 LRU::LRU(const size_t capacity) : capacity_(capacity) {}
 
@@ -53,7 +54,7 @@ void LRU::Put(const int64_t key, Page *page) {
     }
 
     // create a new node
-    QueueNode *new_node = new QueueNode(key, page);
+    auto *new_node = new QueueNode(key, page);
     if (!front_) {
         front_ = rear_ = new_node;
     } else {
@@ -107,6 +108,39 @@ void LRU::Evict() {
     delete to_remove;
 
     --size_;
+}
+
+void LRU::EvictPage(Page *page) {
+    QueueNode *current = front_;
+
+    while (current) {
+        if (current->page_ == page) {
+            // If front
+            if (current == front_) {
+                front_ = current->next_;
+                if (front_) {
+                    front_->prev_ = nullptr;
+                }
+            }
+            // If rear
+            else if (current == rear_) {
+                rear_ = current->prev_;
+                if (rear_) {
+                    rear_->next_ = nullptr;
+                }
+            }
+            // If middle
+            else {
+                current->prev_->next_ = current->next_;
+                current->next_->prev_ = current->prev_;
+            }
+
+            delete current;
+            --size_;
+            return;
+        }
+        current = current->next_;
+    }
 }
 
 void LRU::Clear() {

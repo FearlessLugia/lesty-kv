@@ -12,6 +12,8 @@ public:
     virtual void Put(int64_t key, Page *page) = 0;
 
     virtual void Evict() = 0;
+
+    virtual void EvictPage(Page *page) = 0;
 };
 
 

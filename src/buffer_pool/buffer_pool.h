@@ -22,7 +22,6 @@ class BufferPool {
 
 public:
     vector<BucketNode*> *buckets_;
-    // vector<forward_list<Page*>> *buckets_;
 
     size_t capacity_;
     size_t size_;
@@ -39,6 +38,8 @@ public:
 
 
     void Remove();
+
+    void RemoveLevel(int64_t level);
 
     void Clear();
 

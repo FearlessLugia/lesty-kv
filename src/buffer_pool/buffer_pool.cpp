@@ -118,6 +118,41 @@ void BufferPool::Remove() {
     }
 }
 
+void BufferPool::RemoveLevel(int64_t level) {
+    LOG("  Removing all pages for level: " << level);
+
+    for (auto &bucket: *buckets_) {
+        BucketNode *current = bucket;
+        BucketNode *prev = nullptr;
+
+        while (current) {
+            Page *page = current->page_;
+
+            if (page->eviction_policy_key_ == level) {
+                eviction_policy_->EvictPage(page);
+
+                if (prev) {
+                    prev->next_ = current->next_;
+                } else {
+                    bucket = current->next_;
+                }
+
+                delete current->page_;
+                BucketNode *temp = current;
+                current = current->next_;
+                delete temp;
+
+                --size_;
+            } else {
+                prev = current;
+                current = current->next_;
+            }
+        }
+    }
+
+    LOG("  Finished removing all pages for level: " << level);
+}
+
 void BufferPool::Clear() {
     for (auto &head: *buckets_) {
         while (head) {

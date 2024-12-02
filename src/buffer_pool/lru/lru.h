@@ -35,6 +35,8 @@ public:
 
     void Evict() override;
 
+    void EvictPage(Page *page) override;
+
     void Clear();
 };
 

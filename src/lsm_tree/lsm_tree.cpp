@@ -141,6 +141,10 @@ void LsmTree::SortMergePreviousLevel(int64_t current_level) {
 
         for (const auto &node: levelled_sst_[current_level]) {
             DeleteFile(node);
+
+            // Remove the pages from buffer pool
+            BufferPool *buffer_pool = BufferPoolManager::GetInstance();
+            buffer_pool->RemoveLevel(current_level);
         }
         levelled_sst_[current_level].clear();
 
@@ -173,6 +177,10 @@ void LsmTree::SortMergeLastLevel() {
 
         for (const auto &node: levelled_sst_[kLevelToApplyDostoevsky]) {
             DeleteFile(node);
+
+            // Remove the pages from buffer pool
+            BufferPool *buffer_pool = BufferPoolManager::GetInstance();
+            buffer_pool->RemoveLevel(kLevelToApplyDostoevsky);
         }
         levelled_sst_[kLevelToApplyDostoevsky].clear();
 
@@ -217,9 +225,9 @@ vector<vector<BTreeSSTable *>> LsmTree::ReadSSTsFromStorage() {
         }
     }
 
-    // Sort the SSTs in each level, the newest SST comes first
+    // Sort the SSTs in each level, the oldest SST comes first
     for (auto &level: levels) {
-        ranges::sort(level, [](const BTreeSSTable *a, const BTreeSSTable *b) { return a->file_path_ > b->file_path_; });
+        ranges::sort(level, [](const BTreeSSTable *a, const BTreeSSTable *b) { return a->file_path_ < b->file_path_; });
     }
 
     return levels;

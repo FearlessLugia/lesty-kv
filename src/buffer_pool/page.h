@@ -18,8 +18,6 @@ public:
     Page(const string &id) : id_(id) {}
     Page(const string &id, const vector<int64_t> &data) : id_(id), data_(data) {}
 
-    // int64_t eviction_policy_key_;
-
     size_t GetSize() const { return data_.size(); }
 };
 
