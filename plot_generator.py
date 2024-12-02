@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-
 def read_csv_and_plot(file_path, file_name, title):
     # Read data from CSV file
     data = pd.read_csv(file_path)
@@ -9,7 +8,7 @@ def read_csv_and_plot(file_path, file_name, title):
     plt.figure(figsize=(8, 8))
     plt.plot(
         data['Data Size'],
-        data[f'{title} Throughput' if title != 'Get' else 'Binary Search Throughput'],
+        data[f'{title} Throughput' if title != 'Get' else 'Binary Search Throughput']/1024/1024,
         marker='o',
         linestyle='-',
         linewidth=2.5,
@@ -22,14 +21,14 @@ def read_csv_and_plot(file_path, file_name, title):
     plt.xticks(ticks, labels=[str(tick) for tick in ticks])
 
     plt.title(f'{title} Throughput vs Data Size (Log Scale)', fontsize=14)
-    plt.xlabel('Data Size (log scale)', fontsize=12)
-    plt.ylabel(f'{title} Throughput', fontsize=12)
+    plt.xlabel('Data Size (MB, log scale)', fontsize=12)
+    plt.ylabel(f'{title} Throughput (MB ops/sec)', fontsize=12)
 
     plt.tight_layout()
     plt.savefig(file_name)
     plt.show()
 
 
-read_csv_and_plot('experiment3_Put.csv', 'put_plot.png', 'Put')
-read_csv_and_plot('experiment3_Get.csv', 'get_plot.png', 'Get')
-read_csv_and_plot('experiment3_Scan.csv', 'scan_plot.png', 'Scan')
+read_csv_and_plot('./experiment_Put.csv', 'put_plot.png', 'Put')
+read_csv_and_plot('./experiment_Get.csv', 'get_plot.png', 'Get')
+read_csv_and_plot('./experiment_Scan.csv', 'scan_plot.png', 'Scan')

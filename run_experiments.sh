@@ -8,5 +8,5 @@ make
 ./kv-experiment
 
 # Plot graph
-#python3 ./ .py
+python3 ./plot_generator.py
 
