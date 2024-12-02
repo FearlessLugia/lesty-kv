@@ -12,7 +12,6 @@
 class TestBufferPool : public TestBase {
     static bool TestBuckets() {
         BufferPool *bufferPool = new BufferPool(4);
-        // bufferPool->buckets_ = new vector<BucketNode*>(2);
 
         const string page1_id = "test1_128";
         const string page2_id = "test2_128";
@@ -59,7 +58,6 @@ class TestBufferPool : public TestBase {
 
         return true;
     }
-
 
     static bool TestLRUEvict() {
         BufferPool *bufferPool = new BufferPool(6);
