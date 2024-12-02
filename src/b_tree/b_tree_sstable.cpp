@@ -18,7 +18,8 @@
 
 namespace fs = std::filesystem;
 
-BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new, const int64_t level) : SSTable() {
+BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new, const int64_t level) :
+    SSTable(db_name) {
     if (create_new) {
         // If creation, generate a new file name
         const string new_file_name = SSTCounter::GetInstance().GenerateFileName(level);
@@ -30,7 +31,7 @@ BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new, const i
 
         fd_ = open(file_path_.c_str(), O_RDONLY | O_CREAT, 0644);
         if (fd_ < 0) {
-            throw std::runtime_error("Failed to open SSTable file.");
+            throw std::runtime_error("Failed to open SSTable file: " + file_path_);
         }
 
         LOG("  Open file: " << file_path_);
@@ -70,11 +71,6 @@ void BTreeSSTable::InitialKeyRange() {
 
 
 void BTreeSSTable::WritePage(const off_t offset, const Page *page, const bool is_final_page = false) const {
-    if (fd_ < 0) {
-        cerr << "Invalid file descriptor for writing page at offset " << offset << endl;
-        exit(1);
-    }
-
     LOG("  └Writing page " << page->id_);
 
     // Write the page to the file
@@ -223,7 +219,6 @@ void BTreeSSTable::GenerateBTreeLayers(vector<int64_t> prev_layer_nodes) {
         // Since we only have three layers, the root must be a single node
         // So we need to merge the root_layer_nodes into a single root node
         // and move the previous root_layer_nodes to internal_nodes_
-
         if (root_layer_nodes.size() == 1) {
             // The root node fits in one node
             root_ = root_layer_nodes[0];

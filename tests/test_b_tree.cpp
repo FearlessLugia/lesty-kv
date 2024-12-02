@@ -23,7 +23,7 @@ class TestBTree : public TestBase {
             data.push_back(i * 100);
         }
 
-        btree.FlushFromMemtable(&data);
+        btree.FlushToStorage(&data);
 
         assert(btree.root_.size() == 1);
         assert(btree.root_[0] == 1024);

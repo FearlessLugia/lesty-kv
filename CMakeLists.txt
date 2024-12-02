@@ -24,8 +24,8 @@ add_library(kv-lib src/memtable.cpp
         src/buffer_pool/buffer_pool.cpp
         src/buffer_pool/buffer_pool.h
         src/buffer_pool/buffer_pool_manager.h
-        src/buffer_pool/directory.cpp
-        src/buffer_pool/directory.h
+#        src/buffer_pool/directory.cpp
+#        src/buffer_pool/directory.h
         src/buffer_pool/lru/queue_node.h
         src/buffer_pool/lru/eviction_policy.h
         src/buffer_pool/lru/lru.cpp
@@ -34,10 +34,11 @@ add_library(kv-lib src/memtable.cpp
         src/b_tree/b_tree_sstable.h
         src/lsm_tree/lsm_tree.cpp
         src/lsm_tree/lsm_tree.h
-        src/bloom_filter/bloom_filter.cpp
-        src/bloom_filter/bloom_filter.h
+#        src/bloom_filter/bloom_filter.cpp
+#        src/bloom_filter/bloom_filter.h
         src/sst_counter.h
         src/sst_counter.cpp
+        src/file_handler.h
 )
 
 add_executable(kv-test

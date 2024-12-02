@@ -8,13 +8,16 @@
 
 #include "buffer_pool/buffer_pool.h"
 #include "buffer_pool/page.h"
+#include "file_handler.h"
 
 using namespace std;
 class SSTable {
+
 public:
     string file_path_;
-    mutable int fd_;
     off_t file_size_;
+
+    mutable int fd_;
 
     // vector<Page *> pages_;
 
@@ -29,8 +32,8 @@ public:
 
     Page *GetPage(off_t offset, bool is_sequential_flooding = false) const;
 
-    optional<int64_t> Get(const int64_t key) const;
-    vector<pair<int64_t, int64_t>> Scan(const int64_t start_key, const int64_t end_key) const;
+    optional<int64_t> Get(int64_t key) const;
+    vector<pair<int64_t, int64_t>> Scan(int64_t start_key, int64_t end_key) const;
 
 
 protected:
@@ -46,7 +49,7 @@ protected:
     virtual int64_t BinarySearchUpperbound(const int64_t key, bool is_sequential_flooding) const;
 
     virtual vector<pair<int64_t, int64_t>> LinearSearchToEndKey(off_t start_offset, int64_t start_key, int64_t end_key,
-                                                        bool is_sequential_flooding) const;
+                                                                bool is_sequential_flooding) const;
 };
 
 

@@ -17,14 +17,14 @@
 using namespace std;
 
 SSTable::SSTable(const filesystem::path &file_path) : file_path_(file_path) {
-    fd_ = open(file_path.c_str(), F_NOCACHE | O_RDONLY);
+    fd_ = open(file_path.c_str(), O_RDONLY); // F_NOCACHE for macOS / O_DIRECT for Linux
     if (fd_ < 0) {
         cerr << "  Failed to open SSTable file" << endl;
-        return;
+        throw std::runtime_error("Failed to open SSTable file: " + file_path_);
     }
 
     file_size_ = GetFileSize();
-    InitialKeyRange();
+    SSTable::InitialKeyRange();
 }
 
 SSTable::~SSTable() {
@@ -117,9 +117,9 @@ Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) co
     // Align the offset to the beginning of the page
     const off_t aligned_offset = offset - (offset % kPageSize);
 
-    const ssize_t bytes_read = pread(fd_, buffer, kPageSize, aligned_offset);
+    ssize_t bytes_read = pread(fd_, buffer, kPageSize, aligned_offset);
     if (bytes_read <= 0) {
-        LOG("\tCould not read page at offset " << offset << " in " << file_path_);
+        LOG("\tCould not read page at offset " << offset << " in " << file_path_ << ": " << strerror(errno));
         return nullptr;
     }
 
@@ -313,7 +313,7 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
         // Check if there is a next page
         if (page_index + 1 <= num_pages) {
             if (page_index + 1 < num_pages) {
-                const off_t next_page_offset = (page_index + 1) * kPageSize;
+                const off_t next_page_offset = (1 + page_index) * kPageSize;
                 return next_page_offset; // Upper bound starts at the next page
             }
             // No more keys available
@@ -324,7 +324,7 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
     }
 
     // Upper bound found within the page
-    const off_t key_offset = page_offset + (page_left - 1) * kPairSize;
+    const off_t key_offset = (page_left - 1) * kPairSize + page_offset;
     return key_offset;
 }
 

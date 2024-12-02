@@ -23,12 +23,12 @@ public:
     static SSTCounter &GetInstance();
     void SetDbName(const string &db_name);
 
-    void Initialize();
+    // void Initialize();
     void SetLevelCounters(int64_t level, int64_t counter);
 
     string GetDbName() const;
 
-    int64_t GetAndIncrementByLevel(int64_t level);
+    // int64_t GetAndIncrementByLevel(int64_t level);
     string GenerateFileName(int64_t level);
 };
 

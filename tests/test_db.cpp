@@ -14,12 +14,12 @@ class TestDb : public TestBase {
         Database db(kMemtableSize);
         const string db_name = "db1";
 
-        // db.Open(db_name);
-        // for (auto i = 1; i <= 5000; ++i) {
-        //     db.Put(i, i * 10);
-        // }
-        // db.Close();
-        //
+        db.Open(db_name);
+        for (auto i = 1; i <= 5000; ++i) {
+            db.Put(i, i * 10);
+        }
+        db.Close();
+
         // db.Open(db_name);
         // for (auto i = 500; i <= 1000; ++i) {
         //     db.Put(i, i * 100);
@@ -35,6 +35,12 @@ class TestDb : public TestBase {
         // db.Open(db_name);
         // for (auto i = 1; i <= 1024; ++i) {
         //     db.Put(i, -i * 10);
+        // }
+        // db.Close();
+        //
+        // db.Open(db_name);
+        // for (auto i = 900; i <= 1100; ++i) {
+        //     db.Put(i, -i * 100);
         // }
         // db.Close();
 
@@ -65,6 +71,17 @@ class TestDb : public TestBase {
         assert(res[1].second == 10250);
         assert(res.back().first == 4096);
         assert(res.back().second == 40960);
+        cout << "==============================" << endl;
+
+        db.Delete(1024);
+        const optional<int64_t> value2 = db.Get(key);
+        cout << "Get result: " << endl;
+        if (value2.has_value()) {
+            cout << " Get key " << key << " returns " << value2.value() << endl;
+        } else {
+            cout << " Key " << key << " not found" << endl;
+        }
+        assert(!value2.has_value());
 
         db.Close();
 

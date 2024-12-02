@@ -15,6 +15,8 @@ public:
     string id_;
     vector<int64_t> data_;
 
+    int eviction_policy_key_;
+
     Page(const string &id) : id_(id) {}
     Page(const string &id, const vector<int64_t> &data) : id_(id), data_(data) {}
 

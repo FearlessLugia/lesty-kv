@@ -4,6 +4,7 @@
 
 #include "database.h"
 
+#include <__ranges/reverse_view.h>
 #include <algorithm> // for std::sort
 #include <fcntl.h>
 #include <regex>
@@ -92,14 +93,15 @@ optional<int64_t> Database::Get(const int64_t key) const {
     // Find in SSTs from the lowest level to the highest level
     // In the same level, find from the newest to the oldest
     for (auto &current_level: lsm_tree.levelled_sst_) {
-        for (const auto sst: current_level) {
-            auto value = sst->Get(key);
-            if (value.has_value()) {
+        for (const auto sst: ranges::reverse_view(current_level)) {
+            sst->fd_ = open(sst->file_path_.c_str(), O_RDONLY);
+            auto get_value = sst->Get(key);
+            if (get_value.has_value()) {
                 // If the value is INT64_MIN, it means the key is deleted
-                if (value.value() == INT64_MIN) {
+                if (get_value.value() == INT64_MIN) {
                     return nullopt;
                 }
-                return value;
+                return get_value;
             }
         }
     }

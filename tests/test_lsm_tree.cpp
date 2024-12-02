@@ -10,7 +10,7 @@
 
 class TestLsmTree : public TestBase {
     static bool TestMultipleMergeSort() {
-        Database db(kMemtableSize);
+        Database db(32 * 1024); // 32KB
         const string db_name = "test_db";
         filesystem::remove_all(db_name);
 
@@ -65,7 +65,7 @@ class TestLsmTree : public TestBase {
     }
 
     static bool TestBuildLsmTree() {
-        Database db(kMemtableSize);
+        Database db(32 * 1024);
         const string db_name = "test_db";
         filesystem::remove_all(db_name);
 
@@ -87,7 +87,7 @@ class TestLsmTree : public TestBase {
     }
 
     static bool TestLsmTreeIntegrated() {
-        Database db(kMemtableSize);
+        Database db(32 * 1024);
         const string db_name = "test_db1";
         filesystem::remove_all(db_name);
 
