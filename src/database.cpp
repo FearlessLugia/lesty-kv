@@ -44,13 +44,12 @@ void Database::Open(const string &db_name) {
 
     // Initialize SSTCounter with the database name, get current SST counter
     SSTCounter::GetInstance().SetDbName(db_name);
-    // SSTCounter::GetInstance().Initialize();
 
     // Build LSM-Tree
     LsmTree::GetInstance();
 }
 
-void Database::Close() {
+void Database::Close() const {
     if (memtable_->Size() > 0) {
         LOG("Closing database and flushing memtable to SSTs: " << db_name_);
 
@@ -64,7 +63,7 @@ void Database::Close() {
     LOG("========================================");
 }
 
-void Database::Put(const int64_t key, const int64_t value) {
+void Database::Put(const int64_t key, const int64_t value) const {
     memtable_->Put(key, value);
 
     if (memtable_->Size() >= memtable_->memtable_size) {
@@ -91,8 +90,8 @@ optional<int64_t> Database::Get(const int64_t key) const {
     const LsmTree &lsm_tree = LsmTree::GetInstance();
 
     // Find in SSTs from the lowest level to the highest level
-    // In the same level, find from the newest to the oldest
     for (auto &current_level: lsm_tree.levelled_sst_) {
+        // In the same level, find from the newest to the oldest
         for (const auto sst: ranges::reverse_view(current_level)) {
             sst->fd_ = open(sst->file_path_.c_str(), O_RDONLY);
             auto get_value = sst->Get(key);
@@ -134,11 +133,11 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
     const LsmTree &lsm_tree = LsmTree::GetInstance();
 
     // Find in SSTs from the lowest level to the highest level
-    // In the same level, find from the newest to the oldest
     for (auto &current_level: lsm_tree.levelled_sst_) {
-        for (const auto sst: current_level) {
+        // In the same level, find from the newest to the oldest
+        for (const auto sst: ranges::reverse_view(current_level)) {
             LOG("\tScan in " << sst->file_path_);
-
+            sst->fd_ = open(sst->file_path_.c_str(), O_RDONLY);
             const auto values = sst->Scan(start_key, end_key);
             // Update result and found_keys
             for (const auto &[key, value]: values) {
@@ -169,7 +168,7 @@ void Database::Delete(int64_t key) const {
 void Database::FlushFromMemtable() const {
     // Flush to level 0 of LSM-Tree
     const string db_name = SSTCounter::GetInstance().GetDbName();
-    auto b_tree_sst = new BTreeSSTable(db_name, true);
+    const auto b_tree_sst = new BTreeSSTable(db_name, true);
     LOG(" | Flushing to SST: " << b_tree_sst->file_path_);
 
     // 1 memtable -> 1 SSTable

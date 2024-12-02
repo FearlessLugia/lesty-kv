@@ -35,7 +35,7 @@ SSTable::~SSTable() {
     }
 }
 
-void SSTable::CloseFile() {
+void SSTable::CloseFile() const {
     if (fd_ >= 0) {
         close(fd_);
         LOG("  Closed file: " << file_path_ << " actively");
@@ -52,7 +52,7 @@ off_t SSTable::GetFileSize() const {
     return file_size;
 }
 
-// update min key and max key of the SSTable
+// Update min key and max key of the SSTable
 void SSTable::InitialKeyRange() {
     char buffer[kPageSize];
 
@@ -137,7 +137,7 @@ Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) co
         buffer_pool->Put(page_id, data);
     }
 
-    Page *new_page = new Page(page_id, data);
+    auto new_page = new Page(page_id, data);
     return new_page;
 }
 
@@ -209,7 +209,7 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
         }
     }
 
-    LOG("  2 Could not find key " << key << " in " << file_path_);
+    LOG("  Could not find key " << key << " in " << file_path_);
     return nullopt;
 }
 
@@ -289,9 +289,6 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
     const Page *page = GetPage(page_offset, is_sequential_flooding);
     const auto data = page->data_;
     const size_t num_pairs = page->GetSize() / 2;
-
-    const int64_t first_key = data[0];
-    const int64_t last_key = data[(num_pairs - 1) * 2];
 
     // Inner binary search to find the upper bound within the page
     size_t page_left = 0;

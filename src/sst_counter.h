@@ -10,11 +10,10 @@
 using namespace std;
 
 class SSTCounter {
-    // Level set to be 0, as it's the first level of the B-Tree
     vector<int64_t> level_counters_;
     string db_name_;
 
-    SSTCounter() : level_counters_({}), db_name_("") {}
+    SSTCounter() : level_counters_({}){}
 
     SSTCounter(const SSTCounter &) = delete;
     SSTCounter &operator=(const SSTCounter &) = delete;
@@ -23,12 +22,10 @@ public:
     static SSTCounter &GetInstance();
     void SetDbName(const string &db_name);
 
-    // void Initialize();
     void SetLevelCounters(int64_t level, int64_t counter);
 
-    string GetDbName() const;
+    [[nodiscard]] string GetDbName() const;
 
-    // int64_t GetAndIncrementByLevel(int64_t level);
     string GenerateFileName(int64_t level);
 };
 

@@ -27,6 +27,7 @@ public:
     void Delete(int64_t key);
 
     vector<pair<int64_t, int64_t>> TraversePair() const;
+
     vector<int64_t> Traverse() const;
 
     void clear();

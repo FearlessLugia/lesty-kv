@@ -20,23 +20,21 @@ class Database {
     BufferPool *buffer_pool_;
 
 public:
-    explicit Database(const size_t memtable_size);
+    explicit Database(size_t memtable_size);
 
     ~Database();
 
     void Open(const string &db_name);
 
-    void Close();
+    void Close() const;
 
-    void Put(int64_t key, int64_t value);
+    void Put(int64_t key, int64_t value) const;
 
     optional<int64_t> Get(int64_t key) const;
 
     vector<pair<int64_t, int64_t>> Scan(int64_t start_key, int64_t end_key) const;
 
     void Delete(int64_t key) const;
-
-    // void FlushToSst();
 
     void FlushFromMemtable() const;
 };

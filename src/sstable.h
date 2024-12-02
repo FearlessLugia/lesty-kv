@@ -8,7 +8,6 @@
 
 #include "buffer_pool/buffer_pool.h"
 #include "buffer_pool/page.h"
-#include "file_handler.h"
 
 using namespace std;
 class SSTable {
@@ -19,8 +18,6 @@ public:
 
     mutable int fd_;
 
-    // vector<Page *> pages_;
-
     int64_t min_key_;
     int64_t max_key_;
 
@@ -28,7 +25,7 @@ public:
     SSTable() = default;
     ~SSTable();
 
-    void CloseFile();
+    void CloseFile() const;
 
     Page *GetPage(off_t offset, bool is_sequential_flooding = false) const;
 

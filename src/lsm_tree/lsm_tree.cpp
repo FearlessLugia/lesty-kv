@@ -275,8 +275,6 @@ void LsmTree::DeleteFile(BTreeSSTable *sst) {
             } else {
                 cerr << "Failed to delete file: " << file_path << endl;
             }
-        } else {
-            cerr << "File does not exist: " << file_path << endl;
         }
 
         delete sst;
