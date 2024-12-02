@@ -2,19 +2,19 @@
 // Created by Kiiro Huang on 24-11-21.
 //
 
-#include "b_tree_sstable.h"
+#include "../../include/b_tree/b_tree_sstable.h"
 
 #include <regex>
 #include <sys/_types/_off_t.h>
 #include <sys/fcntl.h>
 #include <unistd.h>
 
+#include "../../include/buffer_pool/buffer_pool_manager.h"
+#include "../../include/buffer_pool/page.h"
+#include "../../include/memtable.h"
+#include "../../include/sst_counter.h"
 #include "../../utils/constants.h"
 #include "../../utils/log.h"
-#include "../buffer_pool/buffer_pool_manager.h"
-#include "../buffer_pool/page.h"
-#include "../memtable.h"
-#include "../sst_counter.h"
 
 namespace fs = std::filesystem;
 
@@ -102,15 +102,6 @@ void BTreeSSTable::WritePage(const off_t offset, const Page *page, const bool is
 
 
 string BTreeSSTable::FlushToStorage(const vector<int64_t> *data) {
-    // CloseFile();
-
-    // fd_ = EnsureFileOpen();
-    // fd_ = open(file_path_.c_str(), O_RDWR | O_CREAT, 0644);
-    // if (fd_ < 0) {
-    //     cerr << "Failed to open file: " << file_path_ << " for writing: " << strerror(errno) << endl;
-    //     exit(1);
-    // }
-
     const size_t start_pos = file_path_.find('/') + 1;
     const size_t end_pos = file_path_.rfind(".bin");
     const string sst_name = file_path_.substr(start_pos, end_pos - start_pos);

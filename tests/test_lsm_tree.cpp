@@ -4,8 +4,8 @@
 
 #include <cassert>
 
-#include "../src/database.h"
-#include "../src/lsm_tree/lsm_tree.h"
+#include "../include/database.h"
+#include "../include/lsm_tree/lsm_tree.h"
 #include "test_base.h"
 
 class TestLsmTree : public TestBase {

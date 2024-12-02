@@ -7,8 +7,6 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif ()
 
-add_executable(kv src/main.cpp)
-
 add_library(kv-lib src/memtable.cpp
         src/memtable.h
         src/sstable.cpp
@@ -48,7 +46,6 @@ add_executable(kv-experiment
         experiments/experiment.cpp
 )
 
-target_link_libraries(kv PUBLIC kv-lib)
 target_link_libraries(kv-test PUBLIC kv-lib)
 target_link_libraries(kv-experiment PUBLIC kv-lib)
 

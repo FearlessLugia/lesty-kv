@@ -2,7 +2,8 @@
 // Created by Kiiro Huang on 24-11-20.
 //
 
-#include "lru.h"
+#include "../../../include/buffer_pool/lru/lru.h"
+
 #include "../../../utils/log.h"
 
 LRU::LRU(const size_t capacity) : capacity_(capacity) {}

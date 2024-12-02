@@ -3,7 +3,8 @@
 //
 
 
-#include "sst_counter.h"
+#include "../include/sst_counter.h"
+
 #include <filesystem>
 
 using namespace std;

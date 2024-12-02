@@ -2,17 +2,14 @@
 // Created by Kiiro Huang on 2024-11-24.
 //
 
-#include "lsm_tree.h"
-#include "../buffer_pool/buffer_pool_manager.h"
-
-#include <sys/fcntl.h>
-
-#include "../../utils/log.h"
-#include "../sst_counter.h"
-#include "lsm_tree.h"
-#include "../buffer_pool/buffer_pool_manager.h"
+#include "../../include/lsm_tree/lsm_tree.h"
 
 #include <cassert>
+#include <sys/fcntl.h>
+
+#include "../../include/buffer_pool/buffer_pool_manager.h"
+#include "../../include/sst_counter.h"
+#include "../../utils/log.h"
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -118,13 +115,6 @@ vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts, bool should_dis
                 // Update newly read page into current_pages
                 current_pages[sst_id] = next_page->data_;
             }
-        }
-    }
-
-    for (size_t i = 2; i < result.size(); i += 2) {
-        if (result[i] <= result[i - 2]) {
-            LOG(result[i] << " <= " << result[i - 2]);
-            // assert(false);
         }
     }
 

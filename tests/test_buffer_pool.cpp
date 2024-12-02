@@ -3,10 +3,9 @@
 //
 
 #include <cassert>
-
-
 #include <iostream>
-#include "../src/buffer_pool/buffer_pool.h"
+
+#include "../include/buffer_pool/buffer_pool.h"
 #include "test_base.h"
 
 class TestBufferPool : public TestBase {

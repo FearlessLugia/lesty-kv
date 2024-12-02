@@ -2,8 +2,7 @@
 // Created by Kiiro on 24-11-4.
 //
 
-#include "memtable.h"
-#include "../utils/log.h"
+#include "../include/memtable.h"
 
 using namespace std;
 
@@ -29,15 +28,6 @@ vector<pair<int64_t, int64_t>> Memtable::Scan(const int64_t startKey, const int6
 }
 
 void Memtable::Delete(const int64_t key) { Put(key, INT64_MIN); }
-
-vector<pair<int64_t, int64_t>> Memtable::TraversePair() const {
-    vector<pair<int64_t, int64_t>> result;
-
-    for (const auto &[fst, snd]: table_) {
-        result.emplace_back(fst, snd);
-    }
-    return result;
-}
 
 vector<int64_t> Memtable::Traverse() const {
     vector<int64_t> result;

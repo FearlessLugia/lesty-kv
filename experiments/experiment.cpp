@@ -2,13 +2,10 @@
 // Created by Kiiro Huang on 2024-11-30.
 //
 
-#include "../src/b_tree/b_tree_sstable.h"
-#include "../src/database.h"
+#include "../include/database.h"
 
 #include <iostream>
 #include <random>
-#include <sys/fcntl.h>
-#include <unistd.h>
 #include <vector>
 
 using namespace std;

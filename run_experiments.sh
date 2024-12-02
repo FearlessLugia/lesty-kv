@@ -7,6 +7,6 @@ make
 # Run experiments
 ./kv-experiment
 
-# Plot graph
+# Plot graphs
 python3 ../plot_generator.py
 

@@ -2,16 +2,16 @@
 // Created by Kiiro on 24-11-4.
 //
 
-#include "sstable.h"
-#include "../utils/constants.h"
-#include "../utils/log.h"
+#include "../include/sstable.h"
 
 #include <iostream>
 #include <sys/fcntl.h>
 #include <unistd.h>
 
-#include "buffer_pool/buffer_pool_manager.h"
-#include "buffer_pool/page.h"
+#include "../include/buffer_pool/buffer_pool_manager.h"
+#include "../include/buffer_pool/page.h"
+#include "../utils/constants.h"
+#include "../utils/log.h"
 
 
 using namespace std;

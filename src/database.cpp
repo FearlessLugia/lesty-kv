@@ -2,22 +2,21 @@
 // Created by Kiiro Huang on 24-11-5.
 //
 
-#include "database.h"
+#include "../include/database.h"
 
 #include <__ranges/reverse_view.h>
-#include <algorithm> // for std::sort
+#include <algorithm>
 #include <fcntl.h>
 #include <regex>
 #include <sstream>
-#include <unistd.h> // for pread, close
+#include <unistd.h>
 #include <unordered_set>
 
-#include "../utils/constants.h"
+#include "../include/b_tree/b_tree_sstable.h"
+#include "../include/buffer_pool/buffer_pool_manager.h"
+#include "../include/lsm_tree/lsm_tree.h"
+#include "../include/sst_counter.h"
 #include "../utils/log.h"
-#include "b_tree/b_tree_sstable.h"
-#include "buffer_pool/buffer_pool_manager.h"
-#include "lsm_tree/lsm_tree.h"
-#include "sst_counter.h"
 
 Database::Database(const size_t memtable_size) : memtable_(nullptr) {
     memtable_ = new Memtable(memtable_size);
@@ -66,7 +65,7 @@ void Database::Close() const {
 void Database::Put(const int64_t key, const int64_t value) const {
     memtable_->Put(key, value);
 
-    if (memtable_->Size() >= memtable_->memtable_size) {
+    if (memtable_->Size() >= memtable_->memtable_size_) {
         LOG(" ┌Memtable is full, flushing to SST");
         FlushFromMemtable();
         memtable_->clear();

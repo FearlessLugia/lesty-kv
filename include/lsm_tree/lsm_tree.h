@@ -4,7 +4,7 @@
 
 #ifndef LSM_TREE_H
 #define LSM_TREE_H
-#include "../b_tree/b_tree_sstable.h"
+#include "../../include/b_tree/b_tree_sstable.h"
 
 
 struct HeapNode {

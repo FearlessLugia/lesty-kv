@@ -4,8 +4,7 @@
 
 #include <cassert>
 
-#include "../src/database.h"
-#include "../utils/constants.h"
+#include "../include/database.h"
 #include "../utils/log.h"
 #include "test_base.h"
 

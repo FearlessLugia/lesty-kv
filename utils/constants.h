@@ -26,7 +26,6 @@ inline constexpr size_t kPagePairs = kPageSize / kPairSize; // 256
 // // 1 memtable contains 2048 * 16 = 32KB
 // inline constexpr size_t kMemtableSize = kPageSize * kPageNum; // 32KB
 
-
 // This parameter is for experiment
 inline constexpr size_t kMemtableSize = 1024 * 1024; // 1MB
 

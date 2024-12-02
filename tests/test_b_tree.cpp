@@ -4,13 +4,10 @@
 
 
 #include <cassert>
-
-
 #include <iostream>
-#include "../src/b_tree/b_tree_sstable.h"
-#include "../src/buffer_pool/buffer_pool.h"
-#include "../src/database.h"
-#include "../utils/log.h"
+
+#include "../include/b_tree/b_tree_sstable.h"
+#include "../include/database.h"
 #include "test_base.h"
 
 class TestBTree : public TestBase {
