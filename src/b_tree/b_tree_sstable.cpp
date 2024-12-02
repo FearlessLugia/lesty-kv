@@ -19,7 +19,7 @@
 namespace fs = std::filesystem;
 
 BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new, const int64_t level) :
-    SSTable(db_name) {
+    SSTable() {
     if (create_new) {
         // If creation, generate a new file name
         const string new_file_name = SSTCounter::GetInstance().GenerateFileName(level);
