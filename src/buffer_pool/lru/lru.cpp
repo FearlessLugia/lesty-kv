@@ -37,9 +37,9 @@ void LRU::MoveToTail(QueueNode *node) {
 bool LRU::Update(Page *page) {
     QueueNode *current = front_;
     while (current) {
-        // find the page in the queue
+        // Find the page in the queue
         if (current->page_ == page) {
-            // move the page to the rear of the queue
+            // Move the page to the rear of the queue
             MoveToTail(current);
             return true;
         }
@@ -49,12 +49,12 @@ bool LRU::Update(Page *page) {
 }
 
 void LRU::Put(const int64_t key, Page *page) {
-    // if the page is already in the LRU queue
+    // If the page is already in the LRU queue
     if (Update(page)) {
         return;
     }
 
-    // create a new node
+    // Create a new node
     auto *new_node = new QueueNode(key, page);
     if (!front_) {
         front_ = rear_ = new_node;
@@ -65,31 +65,31 @@ void LRU::Put(const int64_t key, Page *page) {
     }
     ++size_;
 
-    // when the queue reaches the capacity, evict the least recently used page
+    // When the queue reaches the capacity, evict the least recently used page
     if (size_ > capacity_) {
         Evict();
     }
 
-    // // if the page is not in the LRU queue
+    // // If the page is not in the LRU queue
     // if (page->eviction_policy_key_ != key) {
-    //     // when the queue reaches the capacity, evict the least recently used page
+    //     // When the queue reaches the capacity, evict the least recently used page
     //     if (queue_->size() == capacity_) {
     //         Evict();
     //     }
     //
-    //     // insert the new page to the front of the queue
+    //     // Insert the new page to the front of the queue
     //
     //     queue_->push_front(QueueNode(key, page));
-    //     // update the eviction policy key of the page
+    //     // Update the eviction policy key of the page
     //     page->eviction_policy_key_ = key;
     // } else {
-    //     // if the page is already in the queue
-    //     // find the page in the queue
+    //     // If the page is already in the queue
+    //     // Find the page in the queue
     //     const auto it =
     //             std::find_if(queue_->begin(), queue_->end(), [&](const QueueNode &node) { return node.page_ == page;
     //             });
     //
-    //     // move the page to the rear of the queue
+    //     // Move the page to the rear of the queue
     //     queue_->splice(queue_->end(), *queue_, it);
     // }
 }
@@ -112,7 +112,7 @@ void LRU::Evict() {
 }
 
 void LRU::EvictPage(Page *page) {
-    QueueNode *current = front_;
+    const QueueNode *current = front_;
 
     while (current) {
         if (current->page_ == page) {

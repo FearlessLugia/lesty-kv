@@ -47,14 +47,6 @@ vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts, bool should_dis
     // Read first page of each SSTable to get offset
     for (size_t i = 0; i < n; ++i) {
         auto &sst = (*ssts)[i];
-
-        // const int fd = sst->file_handler_.GetFd();
-        // if (fd < 0) {
-            // throw runtime_error("Failed to open file: " + sst->file_path_);
-        // }
-
-        // const int fd = sst->file_handler_.GetFd();
-        // sst->fd_ = sst->OpenFile();
         sst->fd_ = open(sst->file_path_.c_str(), O_RDONLY);
         auto offset_page = sst->ReadOffset();
         offsets[i] = offset_page * kPageSize;
@@ -255,8 +247,6 @@ void LsmTree::OrderLsmTree() {
 
 void LsmTree::DeleteFile(BTreeSSTable *sst) {
     try {
-        // sst->CloseFile();
-
         const string &file_path = sst->file_path_;
         if (fs::exists(file_path)) {
             // Remove the file

@@ -138,7 +138,7 @@ Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) co
         data.push_back(entry.second);
     }
 
-    // if not sequential flooding, put the page into the buffer pool
+    // If not sequential flooding, put the page into the buffer pool
     if (!is_sequential_flooding) {
         auto buffer_pool = BufferPoolManager::GetInstance();
         buffer_pool->Put(page_id, data);
@@ -149,8 +149,8 @@ Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) co
 }
 
 optional<int64_t> SSTable::Get(const int64_t key) const {
-    // if max key is smaller than key, no need to scan
-    // if min key is larger than key, no need to scan
+    // If max key is smaller than key, no need to scan
+    // If min key is larger than key, no need to scan
     if (max_key_ < key || min_key_ > key) {
         LOG("\t\tno value in this sst");
         return nullopt;
@@ -186,7 +186,7 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
         }
 
         if (key > first_key && key < last_key) {
-            // since the key is already in order, do another binary search to search inside the page
+            // Since the key is already in order, do another binary search to search inside the page
             size_t page_left = 0;
             size_t page_right = num_pairs - 1;
 
@@ -223,8 +223,8 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
 vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int64_t end_key) const {
     vector<pair<int64_t, int64_t>> result;
 
-    // max key is smaller than start key, no need to scan
-    // min key is larger than end key, no need to scan
+    // Max key is smaller than start key, no need to scan
+    // Min key is larger than end key, no need to scan
     if (max_key_ < start_key || min_key_ > end_key) {
         LOG("\t\tno value in this sst");
 
@@ -235,7 +235,7 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
 
     int64_t start_offset;
     if (min_key_ > start_key) {
-        // min key is larger than end key, scan from the beginning
+        // Min key is larger than end key, scan from the beginning
         LOG("\t\tMin key " << min_key_ << " is larger than start key " << start_key << ", scan from the beginning");
 
         start_offset = 0;
@@ -244,11 +244,10 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
             LOG("  Scan range exceeds sequential flooding threshold, skipping buffer pool writes");
         };
 
-        // else, binary search to find the upper bound of the start key
+        // Else, binary search to find the upper bound of the start key
         start_offset = BinarySearchUpperbound(start_key, is_sequential_flooding);
     }
     // LOG("\t\t\tStart offset: " << start_offset);
-
 
     // Found start key, linear search to find end key
     const auto values = LinearSearchToEndKey(start_offset, start_key, end_key, is_sequential_flooding);
@@ -332,7 +331,8 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
     return key_offset;
 }
 
-vector<pair<int64_t, int64_t>> SSTable::LinearSearchToEndKey(off_t start_offset, int64_t start_key, int64_t end_key,
+vector<pair<int64_t, int64_t>> SSTable::LinearSearchToEndKey(off_t start_offset, const int64_t start_key,
+                                                             const int64_t end_key,
                                                              const bool is_sequential_flooding = false) const {
     vector<pair<int64_t, int64_t>> result;
 

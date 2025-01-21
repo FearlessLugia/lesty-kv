@@ -115,7 +115,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
     vector<pair<int64_t, int64_t>> result;
     unordered_set<int64_t> found_keys;
 
-    // find in memtable
+    // Find in memtable
     vector<pair<int64_t, int64_t>> memtable_results = memtable_->Scan(start_key, end_key);
     // Update result and found_keys
     for (const auto &[key, value]: memtable_results) {
