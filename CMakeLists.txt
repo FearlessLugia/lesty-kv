@@ -7,31 +7,32 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif ()
 
-add_library(kv-lib src/memtable.cpp
-        src/memtable.h
+add_library(kv-lib
+        include/database.h
+        include/memtable.h
+        include/sstable.h
+        include/sst_counter.h
+        include/buffer_pool/Page.h
+        include/buffer_pool/bucket_node.h
+        include/buffer_pool/buffer_pool.h
+        include/buffer_pool/eviction_policy.h
+        include/buffer_pool/lru/queue_node.h
+        include/buffer_pool/lru/lru.h
+        include/buffer_pool/buffer_pool_manager.h
+        include/b_tree/b_tree_sstable.h
+        include/lsm_tree/lsm_tree.h
+        src/memtable.cpp
         src/sstable.cpp
-        src/sstable.h
         src/database.cpp
-        src/database.h
+        src/buffer_pool/buffer_pool.cpp
+        src/buffer_pool/lru/lru.cpp
+        src/b_tree/b_tree_sstable.cpp
+        src/lsm_tree/lsm_tree.cpp
+        src/sst_counter.cpp
         utils/constants.h
         utils/log.h
         external/MurmurHash3.cpp
         external/MurmurHash3.h
-        src/buffer_pool/Page.h
-        src/buffer_pool/bucket_node.h
-        src/buffer_pool/buffer_pool.cpp
-        src/buffer_pool/buffer_pool.h
-        src/buffer_pool/buffer_pool_manager.h
-        src/buffer_pool/lru/queue_node.h
-        src/buffer_pool/lru/eviction_policy.h
-        src/buffer_pool/lru/lru.cpp
-        src/buffer_pool/lru/lru.h
-        src/b_tree/b_tree_sstable.cpp
-        src/b_tree/b_tree_sstable.h
-        src/lsm_tree/lsm_tree.cpp
-        src/lsm_tree/lsm_tree.h
-        src/sst_counter.h
-        src/sst_counter.cpp
 )
 
 add_executable(kv-test
