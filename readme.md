@@ -1,5 +1,5 @@
 # Lesty-kv
-[![wakatime](https://wakatime.com/badge/github/FearlessLugia/CSC2234.svg)](https://wakatime.com/badge/github/FearlessLugia/CSC2234)
+[![wakatime](https://wakatime.com/badge/github/FearlessLugia/lesty-kv.svg)](https://wakatime.com/badge/github/FearlessLugia/lesty-kv)
 
 An LSM-Tree-based key-value store engine implemented in C++.
 
