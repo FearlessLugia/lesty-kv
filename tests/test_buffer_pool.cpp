@@ -8,6 +8,8 @@
 #include "../include/buffer_pool/buffer_pool.h"
 #include "test_base.h"
 
+using namespace std;
+
 class TestBufferPool : public TestBase {
     static bool TestBuckets() {
         BufferPool *bufferPool = new BufferPool(4);

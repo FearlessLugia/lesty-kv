@@ -4,6 +4,7 @@
 
 #ifndef LSM_TREE_H
 #define LSM_TREE_H
+#include <vector>
 #include "../../include/b_tree/b_tree_sstable.h"
 
 
@@ -32,11 +33,11 @@ class LsmTree {
     LsmTree &operator=(const LsmTree &) = delete;
 
 public:
-    vector<vector<BTreeSSTable *>> levelled_sst_;
+    std::vector<std::vector<BTreeSSTable *>> levelled_sst_;
 
     static LsmTree &GetInstance();
 
-    vector<int64_t> SortMerge(vector<BTreeSSTable *> *ssts, bool should_dispose_tombstone);
+    std::vector<int64_t> SortMerge(std::vector<BTreeSSTable *> *ssts, bool should_dispose_tombstone);
     void AddSst(BTreeSSTable *sst);
 
     void SortMergePreviousLevel(int64_t current_level);
@@ -44,7 +45,7 @@ public:
 
     void SortMergeLastLevel();
 
-    vector<vector<BTreeSSTable *>> ReadSSTsFromStorage();
+    std::vector<std::vector<BTreeSSTable *>> ReadSSTsFromStorage();
 
     void BuildLsmTree();
 

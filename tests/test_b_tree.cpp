@@ -4,11 +4,12 @@
 
 
 #include <cassert>
-#include <iostream>
 
 #include "../include/b_tree/b_tree_sstable.h"
 #include "../include/database.h"
 #include "test_base.h"
+
+using namespace std;
 
 class TestBTree : public TestBase {
     static bool TestBuildBTree() {

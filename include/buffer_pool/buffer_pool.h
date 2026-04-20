@@ -14,13 +14,10 @@
 
 #include "../../utils/constants.h"
 
-using namespace std;
-
-
 class BufferPool {
 
 public:
-    vector<BucketNode*> *buckets_;
+    std::vector<BucketNode*> *buckets_;
 
     size_t capacity_;
     size_t size_;
@@ -30,9 +27,9 @@ public:
     explicit BufferPool(size_t capacity);
     ~BufferPool();
 
-    Page *Get(const string &id) const;
+    Page *Get(const std::string &id) const;
 
-    Page *Put(const string &id, const vector<int64_t> &data);
+    Page *Put(const std::string &id, const std::vector<int64_t> &data);
 
     void Remove();
 
@@ -43,9 +40,9 @@ public:
     void Resize();
 
 private:
-    Page *FindPage(const string &id) const;
+    Page *FindPage(const std::string &id) const;
 
-    size_t HashFunction(const string &key) const;
+    size_t HashFunction(const std::string &key) const;
 };
 
 

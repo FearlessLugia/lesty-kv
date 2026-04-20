@@ -5,19 +5,19 @@
 #ifndef TESTBASE_H
 #define TESTBASE_H
 
+#include <functional>
 #include <iostream>
-
-using namespace std;
+#include <string>
 
 class TestBase {
 protected:
-    static bool AssertTrue(const function<bool()> &test, const string &name) {
-        cout << "  - " << name << " - ";
-        if (!(invoke(test))) {
-            cout << "failed ❌" << endl;
+    static bool AssertTrue(const std::function<bool()> &test, const std::string &name) {
+        std::cout << "  - " << name << " - ";
+        if (!(std::invoke(test))) {
+            std::cout << "failed ❌" << std::endl;
             return false;
         }
-        cout << "passed ✅" << endl;
+        std::cout << "passed ✅" << std::endl;
         return true;
     }
 

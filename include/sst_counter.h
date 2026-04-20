@@ -6,12 +6,12 @@
 #define SST_COUNTER_H
 #include <cstdint>
 #include <regex>
-
-using namespace std;
+#include <string>
+#include <vector>
 
 class SSTCounter {
-    vector<int64_t> level_counters_;
-    string db_name_;
+    std::vector<int64_t> level_counters_;
+    std::string db_name_;
 
     SSTCounter() : level_counters_({}){}
 
@@ -21,13 +21,13 @@ class SSTCounter {
 public:
     static SSTCounter &GetInstance();
 
-    void SetDbName(const string &db_name);
+    void SetDbName(const std::string &db_name);
 
     void SetLevelCounters(int64_t level, int64_t counter);
 
-    [[nodiscard]] string GetDbName() const;
+    [[nodiscard]] std::string GetDbName() const;
 
-    string GenerateFileName(int64_t level);
+    std::string GenerateFileName(int64_t level);
 };
 
 

@@ -7,11 +7,12 @@
 #include <fstream>
 #include <iostream>
 #include <map>
-
-using namespace std;
+#include <optional>
+#include <vector>
+#include <utility>
 
 class Memtable {
-    map<int64_t, int64_t> table_;
+    std::map<int64_t, int64_t> table_;
 
 public:
     size_t memtable_size_;
@@ -20,13 +21,13 @@ public:
 
     void Put(int64_t key, int64_t value);
 
-    optional<int64_t> Get(int64_t key) const;
+    std::optional<int64_t> Get(int64_t key) const;
 
-    vector<pair<int64_t, int64_t>> Scan(int64_t startKey, int64_t endKey) const;
+    std::vector<std::pair<int64_t, int64_t>> Scan(int64_t startKey, int64_t endKey) const;
 
     void Delete(int64_t key);
 
-    vector<int64_t> Traverse() const;
+    std::vector<int64_t> Traverse() const;
 
     void clear();
 

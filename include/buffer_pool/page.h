@@ -7,18 +7,16 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 class Page {
 
 public:
-    string id_;
-    vector<int64_t> data_;
+    std::string id_;
+    std::vector<int64_t> data_;
 
     int eviction_policy_key_;
 
-    Page(const string &id) : id_(id) {}
-    Page(const string &id, const vector<int64_t> &data) : id_(id), data_(data) {}
+    Page(const std::string &id) : id_(id) {}
+    Page(const std::string &id, const std::vector<int64_t> &data) : id_(id), data_(data) {}
 
     size_t GetSize() const { return data_.size(); }
 };

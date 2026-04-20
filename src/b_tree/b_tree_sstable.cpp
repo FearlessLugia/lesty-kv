@@ -18,6 +18,8 @@
 
 namespace fs = std::filesystem;
 
+using namespace std;
+
 BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new, const int64_t level) : SSTable() {
     if (create_new) {
         // If creation, generate a new file name

@@ -8,6 +8,8 @@
 #include "../include/lsm_tree/lsm_tree.h"
 #include "test_base.h"
 
+using namespace std;
+
 class TestLsmTree : public TestBase {
     static bool TestMultipleMergeSort() {
         Database db(32 * 1024); // 32KB

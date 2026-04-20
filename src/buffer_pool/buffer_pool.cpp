@@ -10,6 +10,8 @@
 #include "../../utils/constants.h"
 #include "../../utils/log.h"
 
+using namespace std;
+
 BufferPool::BufferPool(const size_t capacity) : capacity_(capacity), size_(0) {
     buckets_ = new vector<BucketNode *>(capacity_);
 
@@ -33,7 +35,7 @@ BufferPool::~BufferPool() {
 
 size_t BufferPool::HashFunction(const string &key) const {
     uint64_t hash[2];
-    MurmurHash3_x64_128(key.c_str(), sizeof(&key), 17, hash);
+    MurmurHash3_x64_128(key.c_str(), key.size(), 17, hash);
     return hash[0] % buckets_->size();
 }
 

@@ -4,13 +4,9 @@
 
 #ifndef LRU_H
 #define LRU_H
-#include <cstdint>
-#include <list>
 
 #include "../../../include/buffer_pool/eviction_policy.h"
 #include "queue_node.h"
-
-using namespace std;
 
 
 class LRU : public EvictionPolicy {
@@ -26,7 +22,7 @@ public:
 
     void MoveToTail(QueueNode *node);
 
-    bool Update(Page *page);
+    bool Update(const Page *page);
 
     void Put(int64_t key, Page *page) override;
 

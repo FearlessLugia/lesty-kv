@@ -8,6 +8,8 @@
 #include "../utils/log.h"
 #include "test_base.h"
 
+using namespace std;
+
 class TestDb : public TestBase {
     static bool TestDbIntegrated() {
         Database db(32 * 1024); // 32KB

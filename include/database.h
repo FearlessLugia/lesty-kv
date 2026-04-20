@@ -6,16 +6,18 @@
 #define DATABASE_H
 #include <string>
 #include <vector>
+#include <optional>
+#include <utility>
+#include <filesystem>
 
 #include "buffer_pool/buffer_pool.h"
 #include "memtable.h"
 #include "sstable.h"
 
-using namespace std;
 namespace fs = std::filesystem;
 
 class Database {
-    string db_name_;
+    std::string db_name_;
     Memtable *memtable_;
     BufferPool *buffer_pool_;
 
@@ -24,15 +26,15 @@ public:
 
     ~Database();
 
-    void Open(const string &db_name);
+    void Open(const std::string &db_name);
 
     void Close() const;
 
     void Put(int64_t key, int64_t value) const;
 
-    optional<int64_t> Get(int64_t key) const;
+    std::optional<int64_t> Get(int64_t key) const;
 
-    vector<pair<int64_t, int64_t>> Scan(int64_t start_key, int64_t end_key) const;
+    std::vector<std::pair<int64_t, int64_t>> Scan(int64_t start_key, int64_t end_key) const;
 
     void Delete(int64_t key) const;
 

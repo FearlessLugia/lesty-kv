@@ -18,6 +18,8 @@
 #include "../include/sst_counter.h"
 #include "../utils/log.h"
 
+using namespace std;
+
 Database::Database(const size_t memtable_size) : memtable_(nullptr) {
     memtable_ = new Memtable(memtable_size);
     buffer_pool_ = BufferPoolManager::GetInstance();
