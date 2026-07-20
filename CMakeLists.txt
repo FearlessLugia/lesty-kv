@@ -18,7 +18,6 @@ add_library(kv-lib
         include/buffer_pool/eviction_policy.h
         include/buffer_pool/lru/queue_node.h
         include/buffer_pool/lru/lru.h
-        include/buffer_pool/buffer_pool_manager.h
         include/b_tree/b_tree_sstable.h
         include/lsm_tree/lsm_tree.h
         src/memtable.cpp
@@ -38,10 +37,10 @@ add_library(kv-lib
 add_executable(kv-test
         tests/test_base.h
         tests/test_runner.cpp
-        tests/test_db.cpp
-        tests/test_buffer_pool.cpp
-        tests/test_b_tree.cpp
-        tests/test_lsm_tree.cpp)
+        tests/test_db.h
+        tests/test_buffer_pool.h
+        tests/test_b_tree.h
+        tests/test_lsm_tree.h)
 
 add_executable(kv-experiment
         experiments/experiment.cpp

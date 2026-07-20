@@ -4,11 +4,11 @@
 
 #include <iostream>
 
-#include "test_b_tree.cpp"
+#include "test_b_tree.h"
 #include "test_base.h"
-#include "test_buffer_pool.cpp"
-#include "test_lsm_tree.cpp"
-#include "test_db.cpp"
+#include "test_buffer_pool.h"
+#include "test_lsm_tree.h"
+#include "test_db.h"
 
 using namespace std;
 
