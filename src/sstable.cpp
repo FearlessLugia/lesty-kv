@@ -5,8 +5,11 @@
 #include "../include/sstable.h"
 
 #include <iostream>
-#include <sys/fcntl.h>
+#include <algorithm>
 #include <unistd.h>
+#include <cstdlib>
+#include <cstring>
+#include <sys/fcntl.h>
 
 
 #include "../include/buffer_pool/page.h"
@@ -23,7 +26,7 @@ SSTable::SSTable(string file_path, BufferPool *buffer_pool, SSTCounter *sst_coun
         throw std::runtime_error("Failed to open SSTable file: " + file_path_);
     }
     file_size_ = GetFileSize();
-    InitialKeyRange();
+    SSTable::InitialKeyRange();
 }
 
 SSTable::SSTable(BufferPool *buffer_pool, SSTCounter *sst_counter) 
@@ -37,19 +40,32 @@ SSTable::~SSTable() {
     }
 }
 
+#ifndef O_DIRECT
+#define O_DIRECT 0
+#endif
+
+// Helper macro to disable OS cache on macOS
+#ifdef __APPLE__
+#define DISABLE_MAC_CACHE(fd) fcntl(fd, F_NOCACHE, 1)
+#else
+#define DISABLE_MAC_CACHE(fd)
+#endif
+
 int SSTable::EnsureFileOpen() const {
     if (fd_ == -1) {
-        fd_ = open(file_path_.c_str(), O_RDWR);
+        fd_ = open(file_path_.c_str(), O_RDWR | O_DIRECT);
         if (fd_ < 0) {
             throw std::runtime_error("Failed to open SSTable file: " + file_path_);
         }
+        DISABLE_MAC_CACHE(fd_);
     } else {
         if (fcntl(fd_, F_GETFD) == -1) {
             close(fd_);
-            fd_ = open(file_path_.c_str(), O_RDWR);
+            fd_ = open(file_path_.c_str(), O_RDWR | O_DIRECT);
             if (fd_ < 0) {
                 throw std::runtime_error("Failed to reopen SSTable file: " + file_path_);
             }
+            DISABLE_MAC_CACHE(fd_);
         }
     }
     return fd_;
@@ -74,7 +90,10 @@ off_t SSTable::GetFileSize() const {
 
 // Update min key and max key of the SSTable
 void SSTable::InitialKeyRange() {
-    char buffer[kPageSize];
+    char *buffer;
+    if (posix_memalign((void**)&buffer, kPageSize, kPageSize) != 0) {
+        throw std::bad_alloc();
+    }
 
     // Read the first block to get the minimum key
     ssize_t bytes_read = pread(fd_, buffer, kPageSize, 0);
@@ -97,6 +116,7 @@ void SSTable::InitialKeyRange() {
         }
         max_key_ = last_entry.first;
     }
+    free(buffer);
 }
 
 bool SSTable::ReadEntry(const char *buffer, const size_t buffer_size, size_t &pos,
@@ -131,7 +151,11 @@ Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) co
     }
 
     // If the page is not in the buffer pool, read it from disk
-    char buffer[kPageSize] = {};
+    char *buffer;
+    if (posix_memalign((void**)&buffer, kPageSize, kPageSize) != 0) {
+        throw std::bad_alloc();
+    }
+    memset(buffer, 0, kPageSize);
 
     // Align the offset to the beginning of the page
     const off_t aligned_offset = offset - (offset % kPageSize);
@@ -139,6 +163,7 @@ Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) co
     ssize_t bytes_read = pread(fd_, buffer, kPageSize, aligned_offset);
     if (bytes_read <= 0) {
         LOG("\tCould not read page at offset " << offset << " in " << file_path_ << ": " << strerror(errno));
+        free(buffer);
         return nullptr;
     }
 
@@ -149,6 +174,8 @@ Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) co
         data.push_back(entry.first);
         data.push_back(entry.second);
     }
+    
+    free(buffer);
 
     // If not sequential flooding, put the page into the buffer pool
     if (!is_sequential_flooding) {

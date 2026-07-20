@@ -8,6 +8,8 @@
 #include <sys/_types/_off_t.h>
 #include <sys/fcntl.h>
 #include <unistd.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "../../include/buffer_pool/page.h"
 #include "../../include/memtable.h"
@@ -46,7 +48,10 @@ BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new, BufferP
 }
 
 void BTreeSSTable::InitialKeyRange() {
-    char buffer[kPageSize];
+    char *buffer;
+    if (posix_memalign((void**)&buffer, kPageSize, kPageSize) != 0) {
+        throw std::bad_alloc();
+    }
 
     const size_t page_num_reserve_btree = ReadOffset();
     const off_t offset = page_num_reserve_btree * kPageSize;
@@ -71,6 +76,8 @@ void BTreeSSTable::InitialKeyRange() {
         }
         max_key_ = last_entry.first;
     }
+    
+    free(buffer);
 }
 
 
@@ -83,7 +90,16 @@ void BTreeSSTable::WritePage(const off_t offset, const Page *page, const bool is
     const auto data = page->GetData();
 
     const size_t elements_to_write = min(kPagePairs * 2, data.size());
-    const ssize_t bytes_written = pwrite(fd_, data.data(), elements_to_write * sizeof(int64_t), offset);
+    
+    void *buffer;
+    if (posix_memalign(&buffer, kPageSize, kPageSize) != 0) {
+        throw std::bad_alloc();
+    }
+    memset(buffer, 0, kPageSize);
+    memcpy(buffer, data.data(), elements_to_write * sizeof(int64_t));
+
+    const ssize_t bytes_written = pwrite(fd_, buffer, kPageSize, offset);
+    free(buffer);
     if (bytes_written < 0) {
         cerr << "Failed to write page at offset " << offset << endl;
         exit(1);
@@ -117,6 +133,7 @@ string BTreeSSTable::FlushToStorage(const vector<pair<int64_t, int64_t>> *data) 
     off_t offset = start_offset;
 
     size_t current_pair_index = 0;
+    off_t exact_file_size = 0;
 
     // Write the data to B-Tree leaf nodes
     while (current_pair_index < data->size()) {
@@ -138,6 +155,7 @@ string BTreeSSTable::FlushToStorage(const vector<pair<int64_t, int64_t>> *data) 
             prev_layer_nodes.push_back(last_key);
         }
 
+        exact_file_size = offset + page_data.size() * sizeof(int64_t);
         WritePage(offset, page);
 
         offset += kPageSize;
@@ -155,6 +173,8 @@ string BTreeSSTable::FlushToStorage(const vector<pair<int64_t, int64_t>> *data) 
     }
 
     LOG(" └Flushed to SST: " << file_path_);
+
+    ftruncate(fd_, exact_file_size);
 
     file_size_ = GetFileSize();
     min_key_ = data->front().first;
