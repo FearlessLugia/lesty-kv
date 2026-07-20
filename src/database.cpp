@@ -4,7 +4,7 @@
 
 #include "../include/database.h"
 
-#include <__ranges/reverse_view.h>
+#include <ranges>
 #include <algorithm>
 #include <fcntl.h>
 #include <regex>
@@ -26,11 +26,9 @@ Database::Database(const size_t memtable_size) : memtable_(nullptr) {
 }
 
 Database::~Database() {
-    {
-        delete memtable_;
+    delete memtable_;
 
-        BufferPoolManager::GetInstance()->Clear();
-    }
+    BufferPoolManager::GetInstance()->Clear();
 }
 
 void Database::Open(const string &db_name) {
@@ -96,7 +94,8 @@ optional<int64_t> Database::Get(const int64_t key) const {
         for (const auto sst: ranges::reverse_view(current_level)) {
             sst->fd_ = sst->EnsureFileOpen();
             auto get_value = sst->Get(key);
-            sst->fd_ = close(sst->fd_);
+            close(sst->fd_);
+            sst->fd_ = -1;
 
             if (get_value.has_value()) {
                 // If the value is INT64_MIN, it means the key is deleted
