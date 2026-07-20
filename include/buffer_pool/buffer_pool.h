@@ -27,22 +27,20 @@ public:
     explicit BufferPool(size_t capacity);
     ~BufferPool();
 
-    Page *Get(const std::string &id) const;
+    [[nodiscard]] Page *Get(const std::string &id) const;
 
     Page *Put(const std::string &id, const std::vector<int64_t> &data);
 
     void Remove();
-
-    void RemoveLevel(int64_t level);
 
     void Clear();
 
     void Resize();
 
 private:
-    Page *FindPage(const std::string &id) const;
+    [[nodiscard]] Page *FindPage(const std::string &id) const;
 
-    size_t HashFunction(const std::string &key) const;
+    [[nodiscard]] size_t HashFunction(const std::string &key) const;
 };
 
 

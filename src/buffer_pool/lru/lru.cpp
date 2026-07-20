@@ -15,7 +15,8 @@ LRU::LRU() {
 }
 
 LRU::~LRU() {
-    Clear();
+    LRU::Clear();
+
     delete dummy_;
 }
 
@@ -55,7 +56,7 @@ void LRU::Remove(QueueNode *node) {
 }
 
 QueueNode *LRU::Put(const int64_t key, Page *page) {
-    QueueNode *new_node = new QueueNode(key, page);
+    auto *new_node = new QueueNode(key, page);
     
     AddToTail(new_node);
 

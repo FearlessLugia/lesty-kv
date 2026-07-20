@@ -80,7 +80,7 @@ Page *BufferPool::Put(const string &id, const vector<int64_t> &data) {
     Page *new_page = new Page(id, data);
 
     const size_t index = HashFunction(id);
-    BucketNode *new_node = new BucketNode(new_page, index);
+    BucketNode *new_node = new BucketNode(new_page);
     new_node->next_ = (*buckets_)[index];
     (*buckets_)[index] = new_node;
 
@@ -120,41 +120,6 @@ void BufferPool::Remove() {
         prev = current;
         current = current->next_;
     }
-}
-
-void BufferPool::RemoveLevel(int64_t level) {
-    LOG("  Removing all pages for level: " << level);
-
-    for (auto &bucket: *buckets_) {
-        BucketNode *current = bucket;
-        BucketNode *prev = nullptr;
-
-        while (current) {
-            Page *page = current->page_;
-
-            if (page->eviction_policy_key_ == level) {
-                eviction_policy_->Remove(current->lru_node_);
-
-                if (prev) {
-                    prev->next_ = current->next_;
-                } else {
-                    bucket = current->next_;
-                }
-
-                delete current->page_;
-                BucketNode *temp = current;
-                current = current->next_;
-                delete temp;
-
-                --size_;
-            } else {
-                prev = current;
-                current = current->next_;
-            }
-        }
-    }
-
-    LOG("  Finished removing all pages for level: " << level);
 }
 
 void BufferPool::Clear() {

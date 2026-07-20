@@ -133,10 +133,6 @@ void LsmTree::SortMergePreviousLevel(int64_t current_level) {
 
         for (const auto &node: levelled_sst_[current_level]) {
             DeleteFile(node);
-
-            // Remove the pages from buffer pool
-            BufferPool *buffer_pool = BufferPoolManager::GetInstance();
-            buffer_pool->RemoveLevel(current_level);
         }
         levelled_sst_[current_level].clear();
 
@@ -169,10 +165,6 @@ void LsmTree::SortMergeLastLevel() {
 
         for (const auto &node: levelled_sst_[kLevelToApplyDostoevsky]) {
             DeleteFile(node);
-
-            // Remove the pages from buffer pool
-            BufferPool *buffer_pool = BufferPoolManager::GetInstance();
-            buffer_pool->RemoveLevel(kLevelToApplyDostoevsky);
         }
         levelled_sst_[kLevelToApplyDostoevsky].clear();
 
