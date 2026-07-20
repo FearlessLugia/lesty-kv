@@ -127,9 +127,6 @@ void LsmTree::SortMergePreviousLevel(int64_t current_level) {
         }
         levelled_sst_[current_level].clear();
 
-        // Current level cleared, set current level counter to 0
-        sst_counter_->SetLevelCounters(current_level, 0);
-
         // and then write to the next level
         if (levelled_sst_.size() == current_level + 1) {
             levelled_sst_.emplace_back();
@@ -159,7 +156,7 @@ void LsmTree::SortMergeLastLevel() {
         }
         levelled_sst_[kLevelToApplyDostoevsky].clear();
 
-        // Name of SST should always be BTree_lastlevel_0.bin
+        // Auto-increment the SSTable name via sst_counter_
         const string db_name = sst_counter_->GetDbName();
         const auto new_sst_nodes = new BTreeSSTable(db_name, true, buffer_pool_, sst_counter_, kLevelToApplyDostoevsky);
         levelled_sst_[kLevelToApplyDostoevsky].push_back(new_sst_nodes);
