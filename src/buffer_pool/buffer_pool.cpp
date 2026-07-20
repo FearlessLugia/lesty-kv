@@ -67,7 +67,7 @@ Page *BufferPool::Get(const string &page_id) const {
     return nullptr;
 }
 
-Page *BufferPool::Put(const string &id, const vector<int64_t> &data) {
+Page *BufferPool::Put(const string &id, vector<int64_t> data) {
     if (Page *exist_page = FindPage(id)) {
         return exist_page;
     }
@@ -77,7 +77,7 @@ Page *BufferPool::Put(const string &id, const vector<int64_t> &data) {
         Remove();
     }
 
-    Page *new_page = new Page(id, data);
+    Page *new_page = new Page(id, std::move(data));
 
     const size_t index = HashFunction(id);
     BucketNode *new_node = new BucketNode(new_page);

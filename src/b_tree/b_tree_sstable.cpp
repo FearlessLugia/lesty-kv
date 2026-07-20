@@ -279,6 +279,7 @@ optional<int64_t> BTreeSSTable::BinarySearch(const int64_t key) const {
         const off_t offset = mid * kPageSize;
 
         const Page *page = GetPage(offset);
+        std::unique_ptr<const Page> ephem_guard(page && page->is_ephemeral_ ? page : nullptr);
         const auto data = page->data_;
         const size_t num_pairs = page->GetSize() / 2;
 

@@ -140,11 +140,11 @@ Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) co
 
     // If not sequential flooding, put the page into the buffer pool
     if (!is_sequential_flooding) {
-        auto buffer_pool = BufferPoolManager::GetInstance();
-        buffer_pool->Put(page_id, data);
+        return buffer_pool->Put(page_id, std::move(data));
     }
 
-    auto new_page = new Page(page_id, data);
+    const auto new_page = new Page(page_id, std::move(data));
+    new_page->is_ephemeral_ = true;
     return new_page;
 }
 
@@ -271,6 +271,7 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
         const off_t offset = mid * kPageSize;
 
         const Page *page = GetPage(offset, is_sequential_flooding);
+        std::unique_ptr<const Page> ephem_guard(page && page->is_ephemeral_ ? page : nullptr);
         const auto data = page->data_;
         const size_t num_pairs = page->GetSize() / 2;
 
@@ -293,6 +294,7 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
     const off_t page_offset = page_index * kPageSize;
 
     const Page *page = GetPage(page_offset, is_sequential_flooding);
+    std::unique_ptr<const Page> ephem_guard(page && page->is_ephemeral_ ? page : nullptr);
     const auto data = page->data_;
     const size_t num_pairs = page->GetSize() / 2;
 
@@ -340,6 +342,7 @@ vector<pair<int64_t, int64_t>> SSTable::LinearSearchToEndKey(off_t start_offset,
 
     while (true) {
         const Page *page = GetPage(current_offset, is_sequential_flooding);
+        std::unique_ptr<const Page> ephem_guard(page && page->is_ephemeral_ ? page : nullptr);
 
         // When start key is the last key in the SSTable, next page will be nullptr
         if (page == nullptr) {

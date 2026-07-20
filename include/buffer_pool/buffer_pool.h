@@ -29,7 +29,7 @@ public:
 
     [[nodiscard]] Page *Get(const std::string &id) const;
 
-    Page *Put(const std::string &id, const std::vector<int64_t> &data);
+    Page *Put(const std::string &id, std::vector<int64_t> data);
 
     void Remove();
 
