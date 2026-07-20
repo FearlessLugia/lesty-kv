@@ -44,6 +44,9 @@ public:
 
 protected:
     off_t GetFileSize() const;
+
+    virtual off_t GetDataStartOffset() const { return 0; }
+
     virtual void InitialKeyRange();
 
     bool ReadEntry(const char *buffer, size_t buffer_size, size_t &pos, std::pair<int64_t, int64_t> &entry) const;

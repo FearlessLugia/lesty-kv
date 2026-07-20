@@ -247,10 +247,8 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
 
     int64_t start_offset;
     if (min_key_ > start_key) {
-        // Min key is larger than end key, scan from the beginning
-        LOG("\t\tMin key " << min_key_ << " is larger than start key " << start_key << ", scan from the beginning");
-
-        start_offset = 0;
+        // Min key is larger than end key, scan from the beginning of data pages
+        start_offset = GetDataStartOffset();
     } else {
         if (is_sequential_flooding) {
             LOG("  Scan range exceeds sequential flooding threshold, skipping buffer pool writes");

@@ -29,6 +29,8 @@ public:
     off_t ReadOffset() const;
 
 private:
+    off_t GetDataStartOffset() const override { return ReadOffset() * kPageSize; }
+
     void InitialKeyRange() override;
 
     // Returns the offset of startKey or nullopt if not found
