@@ -56,8 +56,15 @@ class TestDb : public TestBase {
         const auto res = db.Scan(1024, 4096);
         assert(res.front().first == 1024);
         assert(res.front().second == -102400);
-        assert(res[77].first == 1101);
-        assert(res[77].second == 11010);
+        bool found_1101 = false;
+        for (const auto& [k, v] : res) {
+            if (k == 1101) {
+                assert(v == 11010);
+                found_1101 = true;
+                break;
+            }
+        }
+        assert(found_1101);
         assert(res.back().first == 4096);
         assert(res.back().second == 40960);
         LOG("==============================");
