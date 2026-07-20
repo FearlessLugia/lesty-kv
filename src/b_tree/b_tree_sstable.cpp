@@ -268,8 +268,6 @@ off_t BTreeSSTable::ReadOffset() const {
 
 optional<int64_t> BTreeSSTable::BinarySearch(const int64_t key) const {
     const size_t num_pages = (file_size_ + kPageSize - 1) / kPageSize;
-
-    fd_ = open(file_path_.c_str(), O_RDWR | O_CREAT, 0644);
     const size_t page_num_reserve_btree = ReadOffset();
     size_t left = page_num_reserve_btree;
     size_t right = num_pages - 1;
