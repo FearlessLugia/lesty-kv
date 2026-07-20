@@ -16,13 +16,16 @@
 
 class BufferPool {
 
-public:
+private:
     std::vector<BucketNode*> *buckets_;
 
     size_t capacity_;
     size_t size_;
 
     LRU *eviction_policy_;
+
+public:
+    const LRU *GetEvictionPolicy() const { return eviction_policy_; }
 
     explicit BufferPool(size_t capacity);
     ~BufferPool();

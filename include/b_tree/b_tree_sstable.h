@@ -14,9 +14,13 @@
 #include "../sstable.h"
 
 class BTreeSSTable : public SSTable {
-public:
+private:
     std::vector<int64_t> root_;
     std::vector<std::vector<int64_t>> internal_nodes_;
+
+public:
+    const std::vector<std::vector<int64_t>>& GetInternalNodes() const { return internal_nodes_; }
+    const std::vector<int64_t>& GetRoot() const { return root_; }
 
     // Default level set to 0, as it is the first level of the B-Tree
     BTreeSSTable(const std::string &db_name, bool create_new, BufferPool *buffer_pool, SSTCounter *sst_counter, int64_t level = 0);

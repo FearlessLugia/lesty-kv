@@ -46,13 +46,13 @@ vector<pair<int64_t, int64_t>> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts, 
         auto &sst = (*ssts)[i];
         const auto &page = sst->GetPage(offsets[i]);
         if (page->GetSize() > 0) {
-            if (!page->data_.empty()) {
-                current_pages[i] = page->data_;
+            if (!page->GetData().empty()) {
+                current_pages[i] = page->GetData();
             }
 
             size_t page_index = 0;
-            const int64_t next_key = page->data_[page_index++];
-            const int64_t next_value = page->data_[page_index++];
+            const int64_t next_key = page->GetData()[page_index++];
+            const int64_t next_value = page->GetData()[page_index++];
             min_heap.push({next_key, next_value, page_index, i});
         }
     }
@@ -88,10 +88,10 @@ vector<pair<int64_t, int64_t>> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts, 
             const auto &next_page = sst->GetPage(offsets[sst_id]);
 
             if (next_page) {
-                min_heap.push({next_page->data_[0], next_page->data_[1], 2, sst_id});
+                min_heap.push({next_page->GetData()[0], next_page->GetData()[1], 2, sst_id});
 
                 // Update newly read page into current_pages
-                current_pages[sst_id] = next_page->data_;
+                current_pages[sst_id] = next_page->GetData();
             }
         }
     }

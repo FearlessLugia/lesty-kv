@@ -77,10 +77,10 @@ void BTreeSSTable::InitialKeyRange() {
 void BTreeSSTable::WritePage(const off_t offset, const Page *page, const bool is_final_page = false) const {
     fd_ = EnsureFileOpen();
 
-    LOG("  └Writing page " << page->id_);
+    LOG("  └Writing page " << page->GetId());
 
     // Write the page to the file
-    const auto data = page->data_;
+    const auto data = page->GetData();
 
     const size_t buffer_elements = min(kPagePairs * 2, data.size());
     vector<int64_t> buffer(buffer_elements, 0);
@@ -97,7 +97,7 @@ void BTreeSSTable::WritePage(const off_t offset, const Page *page, const bool is
     }
 
     // Write the page to the buffer pool
-    buffer_pool_->Put(page->id_, data);
+    buffer_pool_->Put(page->GetId(), data);
 }
 
 
@@ -260,7 +260,7 @@ off_t BTreeSSTable::ReadOffset() const {
         exit(1);
     }
 
-    const auto data = page->data_;
+    const auto data = page->GetData();
     for (auto i = 0; i < data.size(); i++) {
         if (data[i] == 0) {
             return 1 + i;
@@ -281,8 +281,8 @@ optional<int64_t> BTreeSSTable::BinarySearch(const int64_t key) const {
         const off_t offset = mid * kPageSize;
 
         const Page *page = GetPage(offset);
-        std::unique_ptr<const Page> ephem_guard(page && page->is_ephemeral_ ? page : nullptr);
-        const auto data = page->data_;
+        std::unique_ptr<const Page> ephem_guard(page && page->IsEphemeral() ? page : nullptr);
+        const auto data = page->GetData();
         const size_t num_pairs = page->GetSize() / 2;
 
         const int64_t first_key = data[0];
@@ -345,7 +345,7 @@ int64_t BTreeSSTable::BinarySearchUpperbound(const int64_t key, bool is_sequenti
         const off_t offset = mid * kPageSize;
 
         const Page *page = GetPage(offset, is_sequential_flooding);
-        const auto data = page->data_;
+        const auto data = page->GetData();
 
         const int64_t first_key = data[0];
 
@@ -366,7 +366,7 @@ int64_t BTreeSSTable::BinarySearchUpperbound(const int64_t key, bool is_sequenti
     const off_t page_offset = page_index * kPageSize;
 
     const Page *page = GetPage(page_offset, is_sequential_flooding);
-    const auto data = page->data_;
+    const auto data = page->GetData();
     const size_t num_pairs = page->GetSize() / 2;
 
     const int64_t first_key = data[0];
@@ -420,7 +420,7 @@ vector<pair<int64_t, int64_t>> BTreeSSTable::LinearSearchToEndKey(off_t start_of
             return result;
         }
 
-        const auto data = page->data_;
+        const auto data = page->GetData();
         const size_t num_pairs = page->GetSize() / 2;
 
         for (size_t i = 0; i < num_pairs; i++) {

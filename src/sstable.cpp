@@ -118,7 +118,7 @@ bool SSTable::ReadEntry(const char *buffer, const size_t buffer_size, size_t &po
 }
 
 Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) const {
-    // Concatenate the name of the file with the offset to get the page id
+    // Concatenate the name of the file with the offset to get the page->GetId()
     const size_t start_pos = file_path_.find('/') + 1;
     const size_t end_pos = file_path_.rfind(".bin");
     const string sst_name = file_path_.substr(start_pos, end_pos - start_pos);
@@ -156,7 +156,7 @@ Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) co
     }
 
     const auto new_page = new Page(page_id, std::move(data));
-    new_page->is_ephemeral_ = true;
+    new_page->SetEphemeral(true);
     return new_page;
 }
 
@@ -182,7 +182,7 @@ optional<int64_t> SSTable::BinarySearch(const int64_t key) const {
         const off_t offset = mid * kPageSize;
 
         const Page *page = GetPage(offset);
-        const auto data = page->data_;
+        const auto data = page->GetData();
         const size_t num_pairs = page->GetSize() / 2;
 
         const int64_t first_key = data[0];
@@ -287,8 +287,8 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
         const off_t offset = mid * kPageSize;
 
         const Page *page = GetPage(offset, is_sequential_flooding);
-        std::unique_ptr<const Page> ephem_guard(page && page->is_ephemeral_ ? page : nullptr);
-        const auto data = page->data_;
+        std::unique_ptr<const Page> ephem_guard(page && page->IsEphemeral() ? page : nullptr);
+        const auto data = page->GetData();
         const size_t num_pairs = page->GetSize() / 2;
 
         const int64_t first_key = data[0];
@@ -310,8 +310,8 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
     const off_t page_offset = page_index * kPageSize;
 
     const Page *page = GetPage(page_offset, is_sequential_flooding);
-    std::unique_ptr<const Page> ephem_guard(page && page->is_ephemeral_ ? page : nullptr);
-    const auto data = page->data_;
+    std::unique_ptr<const Page> ephem_guard(page && page->IsEphemeral() ? page : nullptr);
+    const auto data = page->GetData();
     const size_t num_pairs = page->GetSize() / 2;
 
     // Inner binary search to find the upper bound within the page
@@ -357,14 +357,14 @@ vector<pair<int64_t, int64_t>> SSTable::LinearSearchToEndKey(off_t start_offset,
 
     while (true) {
         const Page *page = GetPage(current_offset, is_sequential_flooding);
-        std::unique_ptr<const Page> ephem_guard(page && page->is_ephemeral_ ? page : nullptr);
+        std::unique_ptr<const Page> ephem_guard(page && page->IsEphemeral() ? page : nullptr);
 
         // When start key is the last key in the SSTable, next page will be nullptr
         if (page == nullptr) {
             return result;
         }
 
-        const auto data = page->data_;
+        const auto data = page->GetData();
         const size_t num_pairs = page->GetSize() / 2;
 
         for (size_t i = 0; i < num_pairs; i++) {

@@ -43,7 +43,7 @@ Page *BufferPool::FindPage(const string &id) const {
 
     const BucketNode *current = (*buckets_)[index];
     while (current) {
-        if (current->page_->id_ == id) {
+        if (current->page_->GetId() == id) {
             return current->page_;
         }
         current = current->next_;
@@ -56,7 +56,7 @@ Page *BufferPool::Get(const string &page_id) const {
     const size_t index = HashFunction(page_id);
     BucketNode *current = (*buckets_)[index];
     while (current) {
-        if (current->page_->id_ == page_id) {
+        if (current->page_->GetId() == page_id) {
             LOG("  Page " << page_id << " hit in buffer pool");
             eviction_policy_->Update(current->lru_node_);
             return current->page_;
@@ -98,10 +98,10 @@ void BufferPool::Remove() {
     if (!page_to_remove)
         return;
 
-    LOG("    Removing page " << page_to_remove->id_ << " from buffer pool");
+    LOG("    Removing page " << page_to_remove->GetId() << " from buffer pool");
 
     // remove the page from the buffer pool
-    const size_t index = HashFunction(page_to_remove->id_);
+    const size_t index = HashFunction(page_to_remove->GetId());
     BucketNode *current = (*buckets_)[index];
     BucketNode *prev = nullptr;
 

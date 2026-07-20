@@ -27,10 +27,10 @@ class TestBTree : public TestBase {
         }
         btree->FlushToStorage(&data);
 
-        assert(btree->root_.size() == 1);
-        assert(btree->root_[0] == 2048);
-        assert(btree->internal_nodes_.size() == 1);
-        assert(btree->internal_nodes_[0] == vector<int64_t>({256, 512, 768, 1024, 1280, 1536, 1792, 2048}));
+        assert(btree->GetRoot().size() == 1);
+        assert(btree->GetRoot()[0] == 2048);
+        assert(btree->GetInternalNodes().size() == 1);
+        assert(btree->GetInternalNodes()[0] == vector<int64_t>({256, 512, 768, 1024, 1280, 1536, 1792, 2048}));
 
         return true;
     }

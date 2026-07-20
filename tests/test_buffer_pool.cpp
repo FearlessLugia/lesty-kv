@@ -26,9 +26,9 @@ class TestBufferPool : public TestBase {
         bufferPool.Put(page3_id, page3_data);
 
         // Check if the data are in the same address
-        assert(bufferPool.Get("test1_128")->data_ == page1_data);
-        assert(bufferPool.Get("test2_128")->data_ == page2_data);
-        assert(bufferPool.Get("test1_256")->data_ == page3_data);
+        assert(bufferPool.Get("test1_128")->GetData() == page1_data);
+        assert(bufferPool.Get("test2_128")->GetData() == page2_data);
+        assert(bufferPool.Get("test1_256")->GetData() == page3_data);
 
         return true;
     }
@@ -54,8 +54,8 @@ class TestBufferPool : public TestBase {
         // Check if the pages in the LRU queue are in the same address as the pages in the buffer pool
         // Check if the pages in the LRU queue are in the correct order
         // page3 should be the most recent (so in the back)
-        assert(bufferPool.eviction_policy_->GetFront()->page_ == page2);
-        assert(bufferPool.eviction_policy_->GetRear()->page_ == page3);
+        assert(bufferPool.GetEvictionPolicy()->GetFront()->page_ == page2);
+        assert(bufferPool.GetEvictionPolicy()->GetRear()->page_ == page3);
 
         return true;
     }
@@ -70,7 +70,7 @@ class TestBufferPool : public TestBase {
         const Page *page = bufferPool.Get("test4");
 
         // Check if the pages in the LRU queue are in the correct order, page of name test4 should be the most recent
-        assert(bufferPool.eviction_policy_->GetRear()->page_ == page);
+        assert(bufferPool.GetEvictionPolicy()->GetRear()->page_ == page);
 
         return true;
     }
@@ -87,13 +87,13 @@ class TestBufferPool : public TestBase {
         bufferPool.Put(p3, {3});
 
         // Verify order in LRU: front should be p1, rear should be p3
-        assert(bufferPool.eviction_policy_->GetFront()->page_->id_ == p1);
-        assert(bufferPool.eviction_policy_->GetRear()->page_->id_ == p3);
+        assert(bufferPool.GetEvictionPolicy()->GetFront()->page_->GetId() == p1);
+        assert(bufferPool.GetEvictionPolicy()->GetRear()->page_->GetId() == p3);
 
         // Get p1 -> should move p1 to rear in O(1)
         (void)bufferPool.Get(p1); // suppression for nodiscard
-        assert(bufferPool.eviction_policy_->GetFront()->page_->id_ == p2);
-        assert(bufferPool.eviction_policy_->GetRear()->page_->id_ == p1);
+        assert(bufferPool.GetEvictionPolicy()->GetFront()->page_->GetId() == p2);
+        assert(bufferPool.GetEvictionPolicy()->GetRear()->page_->GetId() == p1);
         return true;
     }
 
