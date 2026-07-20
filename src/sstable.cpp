@@ -8,13 +8,26 @@
 #include <sys/fcntl.h>
 #include <unistd.h>
 
-#include "../include/buffer_pool/buffer_pool_manager.h"
+
 #include "../include/buffer_pool/page.h"
 #include "../utils/constants.h"
 #include "../utils/log.h"
 
 
 using namespace std;
+
+SSTable::SSTable(string file_path, BufferPool *buffer_pool, SSTCounter *sst_counter) 
+    : file_path_(std::move(file_path)), buffer_pool_(buffer_pool), sst_counter_(sst_counter) {
+    fd_ = open(file_path_.c_str(), O_RDWR);
+    if (fd_ < 0) {
+        throw std::runtime_error("Failed to open SSTable file: " + file_path_);
+    }
+    file_size_ = GetFileSize();
+    InitialKeyRange();
+}
+
+SSTable::SSTable(BufferPool *buffer_pool, SSTCounter *sst_counter) 
+    : buffer_pool_(buffer_pool), sst_counter_(sst_counter) {}
 
 SSTable::~SSTable() {
     if (fd_ >= 0) {
@@ -112,8 +125,7 @@ Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) co
 
     const string page_id = sst_name + "_" + to_string(offset);
 
-    const auto buffer_pool = BufferPoolManager::GetInstance();
-    Page *exist_page = buffer_pool->Get(page_id);
+    Page *exist_page = buffer_pool_->Get(page_id);
     if (exist_page != nullptr) {
         return exist_page;
     }
@@ -140,7 +152,7 @@ Page *SSTable::GetPage(const off_t offset, const bool is_sequential_flooding) co
 
     // If not sequential flooding, put the page into the buffer pool
     if (!is_sequential_flooding) {
-        return buffer_pool->Put(page_id, std::move(data));
+        return buffer_pool_->Put(page_id, std::move(data));
     }
 
     const auto new_page = new Page(page_id, std::move(data));

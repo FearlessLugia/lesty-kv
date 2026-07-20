@@ -6,6 +6,8 @@
 #define LSM_TREE_H
 #include <vector>
 #include "../../include/b_tree/b_tree_sstable.h"
+#include "../../include/buffer_pool/buffer_pool.h"
+#include "../../include/sst_counter.h"
 
 
 struct HeapNode {
@@ -26,22 +28,22 @@ struct HeapNode {
 };
 
 class LsmTree {
-    LsmTree();
+    BufferPool *buffer_pool_;
+    SSTCounter *sst_counter_;
+
+public:
+    LsmTree(BufferPool *buffer_pool, SSTCounter *sst_counter);
     ~LsmTree();
 
     LsmTree(const LsmTree &) = delete;
     LsmTree &operator=(const LsmTree &) = delete;
-
-public:
     std::vector<std::vector<BTreeSSTable *>> levelled_sst_;
-
-    static LsmTree &GetInstance();
 
     std::vector<int64_t> SortMerge(std::vector<BTreeSSTable *> *ssts, bool should_dispose_tombstone);
     void AddSst(BTreeSSTable *sst);
 
     void SortMergePreviousLevel(int64_t current_level);
-    void DeleteFile(BTreeSSTable *sst);
+    static void DeleteFile(BTreeSSTable *sst);
 
     void SortMergeLastLevel();
 

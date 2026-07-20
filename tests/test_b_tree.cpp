@@ -19,7 +19,7 @@ class TestBTree : public TestBase {
 
         db.Open(db_name);
 
-        const auto btree = new BTreeSSTable(db_name, true);
+        const auto btree = new BTreeSSTable(db_name, true, db.GetBufferPool(), db.GetSSTCounter());
 
         vector<int64_t> data;
         for (auto i = 1; i <= 2048; ++i) {

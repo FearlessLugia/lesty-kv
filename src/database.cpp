@@ -13,39 +13,37 @@
 #include <unordered_set>
 
 #include "../include/b_tree/b_tree_sstable.h"
-#include "../include/buffer_pool/buffer_pool_manager.h"
 #include "../include/lsm_tree/lsm_tree.h"
 #include "../include/sst_counter.h"
 #include "../utils/log.h"
 
 using namespace std;
 
-Database::Database(const size_t memtable_size) : memtable_(nullptr) {
+Database::Database(const size_t memtable_size) {
+    buffer_pool_ = new BufferPool(kBufferPoolSize);
+    sst_counter_ = new SSTCounter();
+    lsm_tree_ = new LsmTree(buffer_pool_, sst_counter_);
     memtable_ = new Memtable(memtable_size);
-    buffer_pool_ = BufferPoolManager::GetInstance();
 }
 
 Database::~Database() {
     delete memtable_;
-
-    BufferPoolManager::GetInstance()->Clear();
+    delete lsm_tree_;
+    delete sst_counter_;
+    delete buffer_pool_;
 }
 
 void Database::Open(const string &db_name) {
     db_name_ = db_name;
+    sst_counter_->SetDbName(db_name);
 
     if (!filesystem::exists(db_name)) {
         filesystem::create_directory(db_name);
         LOG("Database created: " << db_name);
     } else {
+        lsm_tree_->BuildLsmTree();
         LOG("Database opened: " << db_name);
     }
-
-    // Initialize SSTCounter with the database name, get current SST counter
-    SSTCounter::GetInstance().SetDbName(db_name);
-
-    // Build LSM-Tree
-    LsmTree::GetInstance();
 }
 
 void Database::Close() const {
@@ -56,7 +54,7 @@ void Database::Close() const {
         memtable_->clear();
     }
 
-    BufferPoolManager::GetInstance()->Clear();
+    buffer_pool_->Clear();
 
     LOG("Database closed");
     LOG("========================================");
@@ -86,7 +84,7 @@ optional<int64_t> Database::Get(const int64_t key) const {
     }
 
     // Find in LSM-Tree
-    const LsmTree &lsm_tree = LsmTree::GetInstance();
+    const LsmTree &lsm_tree = *lsm_tree_;
 
     // Find in SSTs from the lowest level to the highest level
     for (auto &current_level: lsm_tree.levelled_sst_) {
@@ -133,7 +131,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
     }
 
     // Find in LSM-Tree
-    const LsmTree &lsm_tree = LsmTree::GetInstance();
+    const LsmTree &lsm_tree = *lsm_tree_;
 
     // Find in SSTs from the lowest level to the highest level
     for (auto &current_level: lsm_tree.levelled_sst_) {
@@ -174,15 +172,13 @@ void Database::Delete(int64_t key) const {
 
 void Database::FlushFromMemtable() const {
     // Flush to level 0 of LSM-Tree
-    const string db_name = SSTCounter::GetInstance().GetDbName();
-    const auto b_tree_sst = new BTreeSSTable(db_name, true);
+    const auto b_tree_sst = new BTreeSSTable(db_name_, true, buffer_pool_, sst_counter_);
     LOG(" | Flushing to SST: " << b_tree_sst->file_path_);
 
     // 1 memtable -> 1 SSTable
     const auto data = memtable_->Traverse();
     b_tree_sst->FlushToStorage(&data);
 
-    LsmTree &lsm_tree = LsmTree::GetInstance();
-    lsm_tree.AddSst(b_tree_sst);
-    lsm_tree.OrderLsmTree();
+    lsm_tree_->AddSst(b_tree_sst);
+    lsm_tree_->OrderLsmTree();
 }

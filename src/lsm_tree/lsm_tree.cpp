@@ -4,10 +4,8 @@
 
 #include "../../include/lsm_tree/lsm_tree.h"
 
-#include <cassert>
 #include <sys/fcntl.h>
 
-#include "../../include/buffer_pool/buffer_pool_manager.h"
 #include "../../include/sst_counter.h"
 #include "../../utils/log.h"
 
@@ -15,21 +13,14 @@ using namespace std;
 namespace fs = std::filesystem;
 
 
-LsmTree::LsmTree() { BuildLsmTree(); }
+LsmTree::LsmTree(BufferPool *buffer_pool, SSTCounter *sst_counter) : buffer_pool_(buffer_pool), sst_counter_(sst_counter) {}
 
 LsmTree::~LsmTree() {
-    for (auto &level: levelled_sst_) {
-        for (auto &sst: level) {
+    for (const auto &level : levelled_sst_) {
+        for (const auto sst : level) {
             delete sst;
         }
-        level.clear();
     }
-    levelled_sst_.clear();
-}
-
-LsmTree &LsmTree::GetInstance() {
-    static LsmTree instance;
-    return instance;
 }
 
 vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts, bool should_dispose_tombstone) {
@@ -137,18 +128,18 @@ void LsmTree::SortMergePreviousLevel(int64_t current_level) {
         levelled_sst_[current_level].clear();
 
         // Current level cleared, set current level counter to 0
-        SSTCounter::GetInstance().SetLevelCounters(current_level, 0);
+        sst_counter_->SetLevelCounters(current_level, 0);
 
         // and then write to the next level
         if (levelled_sst_.size() == current_level + 1) {
-            levelled_sst_.push_back({});
+            levelled_sst_.emplace_back();
         }
 
         const int64_t next_level = current_level + 1;
 
         // Add the result to the next level
-        const string db_name = SSTCounter::GetInstance().GetDbName();
-        const auto new_sst_nodes = new BTreeSSTable(db_name, true, next_level);
+        const string db_name = sst_counter_->GetDbName();
+        const auto new_sst_nodes = new BTreeSSTable(db_name, true, buffer_pool_, sst_counter_, next_level);
 
         // Generate a new SST in storage
         string file_path = new_sst_nodes->FlushToStorage(&result);
@@ -169,8 +160,8 @@ void LsmTree::SortMergeLastLevel() {
         levelled_sst_[kLevelToApplyDostoevsky].clear();
 
         // Name of SST should always be BTree_lastlevel_0.bin
-        const string db_name = SSTCounter::GetInstance().GetDbName();
-        const auto new_sst_nodes = new BTreeSSTable(db_name, true, kLevelToApplyDostoevsky);
+        const string db_name = sst_counter_->GetDbName();
+        const auto new_sst_nodes = new BTreeSSTable(db_name, true, buffer_pool_, sst_counter_, kLevelToApplyDostoevsky);
         levelled_sst_[kLevelToApplyDostoevsky].push_back(new_sst_nodes);
 
         // Generate a new SST in storage
@@ -182,8 +173,8 @@ vector<vector<BTreeSSTable *>> LsmTree::ReadSSTsFromStorage() {
     vector<vector<BTreeSSTable *>> levels;
     vector<int64_t> level_counters;
 
-    auto &sst_counter = SSTCounter::GetInstance();
-    const string db_name = sst_counter.GetDbName();
+    auto sst_counter = sst_counter_;
+    const string db_name = sst_counter->GetDbName();
 
     const regex filename_pattern(R"(btree(\d+)_(\d+)\.bin)");
 
@@ -201,11 +192,11 @@ vector<vector<BTreeSSTable *>> LsmTree::ReadSSTsFromStorage() {
                 level_counters.resize(level + 1, 0);
             }
 
-            auto sst = new BTreeSSTable(db_name + "/" + filename, false);
+            auto sst = new BTreeSSTable(db_name + "/" + filename, false, buffer_pool_, sst_counter_);
             levels[level].push_back(sst);
 
             level_counters[level] = max(level_counters[level], index + 1);
-            sst_counter.SetLevelCounters(level, level_counters[level]);
+            sst_counter->SetLevelCounters(level, level_counters[level]);
         }
     }
 

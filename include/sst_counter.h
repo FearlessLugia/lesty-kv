@@ -13,13 +13,8 @@ class SSTCounter {
     std::vector<int64_t> level_counters_;
     std::string db_name_;
 
-    SSTCounter() : level_counters_({}){}
-
-    SSTCounter(const SSTCounter &) = delete;
-    SSTCounter &operator=(const SSTCounter &) = delete;
-
 public:
-    static SSTCounter &GetInstance();
+    SSTCounter() : level_counters_({}){}
 
     void SetDbName(const std::string &db_name);
 

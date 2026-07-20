@@ -11,8 +11,9 @@
 #include <filesystem>
 
 #include "buffer_pool/buffer_pool.h"
+#include "lsm_tree/lsm_tree.h"
 #include "memtable.h"
-#include "sstable.h"
+#include "sst_counter.h"
 
 namespace fs = std::filesystem;
 
@@ -20,8 +21,14 @@ class Database {
     std::string db_name_;
     Memtable *memtable_;
     BufferPool *buffer_pool_;
+    LsmTree *lsm_tree_;
+    SSTCounter *sst_counter_;
 
 public:
+    [[nodiscard]] BufferPool *GetBufferPool() const { return buffer_pool_; }
+    [[nodiscard]] SSTCounter *GetSSTCounter() const { return sst_counter_; }
+    [[nodiscard]] LsmTree *GetLsmTree() const { return lsm_tree_; }
+
     explicit Database(size_t memtable_size);
 
     ~Database();
@@ -32,9 +39,9 @@ public:
 
     void Put(int64_t key, int64_t value) const;
 
-    std::optional<int64_t> Get(int64_t key) const;
+    [[nodiscard]] std::optional<int64_t> Get(int64_t key) const;
 
-    std::vector<std::pair<int64_t, int64_t>> Scan(int64_t start_key, int64_t end_key) const;
+    [[nodiscard]] std::vector<std::pair<int64_t, int64_t>> Scan(int64_t start_key, int64_t end_key) const;
 
     void Delete(int64_t key) const;
 

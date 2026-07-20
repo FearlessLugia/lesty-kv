@@ -19,7 +19,7 @@ public:
     std::vector<std::vector<int64_t>> internal_nodes_;
 
     // Default level set to 0, as it is the first level of the B-Tree
-    BTreeSSTable(const std::string &db_name, bool create_new, int64_t level = 0);
+    BTreeSSTable(const std::string &db_name, bool create_new, BufferPool *buffer_pool, SSTCounter *sst_counter, int64_t level = 0);
 
     void WritePage(const off_t offset, const Page *page, bool is_final_page) const;
 

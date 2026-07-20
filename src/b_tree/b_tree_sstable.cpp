@@ -9,7 +9,6 @@
 #include <sys/fcntl.h>
 #include <unistd.h>
 
-#include "../../include/buffer_pool/buffer_pool_manager.h"
 #include "../../include/buffer_pool/page.h"
 #include "../../include/memtable.h"
 #include "../../include/sst_counter.h"
@@ -20,10 +19,10 @@ namespace fs = std::filesystem;
 
 using namespace std;
 
-BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new, const int64_t level) : SSTable() {
+BTreeSSTable::BTreeSSTable(const string &db_name, const bool create_new, BufferPool *buffer_pool, SSTCounter *sst_counter, const int64_t level) 
+    : SSTable(buffer_pool, sst_counter) {
     if (create_new) {
-        // If creation, generate a new file name
-        const string new_file_name = SSTCounter::GetInstance().GenerateFileName(level);
+        const string new_file_name = sst_counter_->GenerateFileName(level);
         file_path_ = fs::path(db_name) / new_file_name;
 
         fd_ = open(file_path_.c_str(), O_RDWR | O_CREAT, 0644);
@@ -98,8 +97,7 @@ void BTreeSSTable::WritePage(const off_t offset, const Page *page, const bool is
     }
 
     // Write the page to the buffer pool
-    const auto buffer_pool = BufferPoolManager::GetInstance();
-    buffer_pool->Put(page->id_, data);
+    buffer_pool_->Put(page->id_, data);
 }
 
 

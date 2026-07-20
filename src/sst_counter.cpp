@@ -10,11 +10,6 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-SSTCounter &SSTCounter::GetInstance() {
-    static SSTCounter instance;
-    return instance;
-}
-
 string SSTCounter::GetDbName() const { return db_name_; }
 
 void SSTCounter::SetDbName(const string &db_name) {

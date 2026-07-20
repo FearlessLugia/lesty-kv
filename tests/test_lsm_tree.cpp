@@ -18,9 +18,9 @@ class TestLsmTree : public TestBase {
 
         db.Open(db_name);
 
-        const auto a = new BTreeSSTable(db_name, true);
-        const auto b = new BTreeSSTable(db_name, true);
-        const auto c = new BTreeSSTable(db_name, true);
+        const auto a = new BTreeSSTable(db_name, true, db.GetBufferPool(), db.GetSSTCounter());
+        const auto b = new BTreeSSTable(db_name, true, db.GetBufferPool(), db.GetSSTCounter());
+        const auto c = new BTreeSSTable(db_name, true, db.GetBufferPool(), db.GetSSTCounter());
 
         vector<int64_t> data;
         for (auto i = 1; i <= 5000; i++) {
@@ -43,8 +43,8 @@ class TestLsmTree : public TestBase {
         }
         c->FlushToStorage(&data);
 
-        auto &lsm_tree = LsmTree::GetInstance();
-        const auto result = lsm_tree.SortMerge(new vector{a, b, c}, true);
+        auto *lsm_tree = db.GetLsmTree();
+        const auto result = lsm_tree->SortMerge(new vector{a, b, c}, true);
 
         assert(result.size() == 10000);
         assert(result[0] == 1);
@@ -79,11 +79,11 @@ class TestLsmTree : public TestBase {
 
         db.Open(db_name);
 
-        LsmTree &lsm_tree = LsmTree::GetInstance();
-        assert(lsm_tree.levelled_sst_.size() == 2);
-        assert(lsm_tree.levelled_sst_[0].size() == 0);
-        assert(lsm_tree.levelled_sst_[1].size() == 1);
-        assert(lsm_tree.levelled_sst_[1][0]->max_key_ == 5000);
+        LsmTree *lsm_tree = db.GetLsmTree();
+        assert(lsm_tree->levelled_sst_.size() == 2);
+        assert(lsm_tree->levelled_sst_[0].size() == 0);
+        assert(lsm_tree->levelled_sst_[1].size() == 1);
+        assert(lsm_tree->levelled_sst_[1][0]->max_key_ == 5000);
 
         return true;
     }
