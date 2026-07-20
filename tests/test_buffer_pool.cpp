@@ -14,12 +14,12 @@ class TestBufferPool : public TestBase {
     static bool TestBuckets() {
         BufferPool bufferPool(4);
 
-        const string page1_id = "test1_128";
-        const string page2_id = "test2_128";
-        const string page3_id = "test1_256";
-        auto page1_data = vector<int64_t>(1, 1);
-        auto page2_data = vector<int64_t>(2, 2);
-        auto page3_data = vector<int64_t>(3, 3);
+        constexpr string page1_id = "test1_128";
+        constexpr string page2_id = "test2_128";
+        constexpr string page3_id = "test1_256";
+        const auto page1_data = vector<int64_t>(1, 1);
+        const auto page2_data = vector<int64_t>(2, 2);
+        const auto page3_data = vector<int64_t>(3, 3);
 
         bufferPool.Put(page1_id, page1_data);
         bufferPool.Put(page2_id, page2_data);
@@ -36,12 +36,12 @@ class TestBufferPool : public TestBase {
     static bool TestLRU() {
         BufferPool bufferPool(4);
 
-        const string page1_id = "test1_128";
-        const string page2_id = "test2_128";
-        const string page3_id = "test1_256";
-        auto page1_data = vector<int64_t>(1, 1);
-        auto page2_data = vector<int64_t>(2, 2);
-        auto page3_data = vector<int64_t>(3, 3);
+        constexpr string page1_id = "test1_128";
+        constexpr string page2_id = "test2_128";
+        constexpr string page3_id = "test1_256";
+        const auto page1_data = vector<int64_t>(1, 1);
+        const auto page2_data = vector<int64_t>(2, 2);
+        const auto page3_data = vector<int64_t>(3, 3);
 
         bufferPool.Put(page1_id, page1_data);
         bufferPool.Put(page2_id, page2_data);
@@ -78,9 +78,9 @@ class TestBufferPool : public TestBase {
     static bool TestBucketNodePointers() {
         BufferPool bufferPool(4);
 
-        const string p1 = "p1";
-        const string p2 = "p2";
-        const string p3 = "p3";
+        constexpr string p1 = "p1";
+        constexpr string p2 = "p2";
+        constexpr string p3 = "p3";
 
         bufferPool.Put(p1, {1});
         bufferPool.Put(p2, {2});
