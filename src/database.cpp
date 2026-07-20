@@ -122,6 +122,7 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
     for (const auto &[key, value]: memtable_results) {
         // If the value is INT64_MIN, it means the key is deleted
         if (value == INT64_MIN) {
+            found_keys.insert(key); // Register tombstone so we skip older versions
             continue;
         }
 
@@ -141,12 +142,14 @@ vector<pair<int64_t, int64_t>> Database::Scan(const int64_t start_key, const int
             LOG("\tScan in " << sst->file_path_);
             sst->fd_ = sst->EnsureFileOpen();
             const auto values = sst->Scan(start_key, end_key);
-            sst->fd_ = close(sst->fd_);
+            close(sst->fd_);
+            sst->fd_ = -1;
 
             // Update result and found_keys
             for (const auto &[key, value]: values) {
                 // If the value is INT64_MIN, it means the key is deleted
                 if (value == INT64_MIN) {
+                    found_keys.insert(key); // Register tombstone so we skip older versions
                     continue;
                 }
 
