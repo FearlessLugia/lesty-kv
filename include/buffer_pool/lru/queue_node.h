@@ -14,8 +14,8 @@ public:
     int64_t key_;
     Page *page_;
 
-    QueueNode* prev_;
-    QueueNode* next_;
+    QueueNode* prev_{nullptr};
+    QueueNode* next_{nullptr};
 
     QueueNode(const int64_t key, Page *page) : key_(key), page_(page) {}
 };

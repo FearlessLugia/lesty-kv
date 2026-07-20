@@ -6,150 +6,81 @@
 
 #include "../../../utils/log.h"
 
-LRU::LRU(const size_t capacity) : capacity_(capacity) {}
+#include "../../../include/buffer_pool/bucket_node.h"
+
+LRU::LRU() {
+    dummy_ = new QueueNode(-1, nullptr);
+    dummy_->next_ = dummy_;
+    dummy_->prev_ = dummy_;
+}
 
 LRU::~LRU() {
-    while (front_) {
-        QueueNode *temp = front_;
-        front_ = front_->next_;
-        delete temp;
-    }
+    Clear();
+    delete dummy_;
 }
 
-void LRU::MoveToTail(QueueNode *node) {
-    if (node == rear_)
-        return;
-
-    if (node == front_) {
-        front_ = front_->next_;
-        front_->prev_ = nullptr;
-    } else {
-        node->prev_->next_ = node->next_;
-        node->next_->prev_ = node->prev_;
-    }
-
-    node->next_ = nullptr;
-    node->prev_ = rear_;
-    rear_->next_ = node;
-    rear_ = node;
+void LRU::AddToTail(QueueNode *node) const {
+    QueueNode *last = dummy_->prev_;
+    last->next_ = node;
+    node->prev_ = last;
+    
+    node->next_ = dummy_;
+    dummy_->prev_ = node;
 }
 
-bool LRU::Update(Page *page) {
-    QueueNode *current = front_;
-    while (current) {
-        // Find the page in the queue
-        if (current->page_ == page) {
-            // Move the page to the rear of the queue
-            MoveToTail(current);
-            return true;
-        }
-        current = current->next_;
-    }
-    return false;
+void LRU::Unlink(const QueueNode *node) {
+    node->prev_->next_ = node->next_;
+    node->next_->prev_ = node->prev_;
 }
 
-void LRU::Put(const int64_t key, Page *page) {
-    // If the page is already in the LRU queue
-    if (Update(page)) {
+bool LRU::Update(QueueNode *node) {
+    if (!node) {
+        return false;
+    }
+
+    Unlink(node);
+
+    AddToTail(node);
+    return true;
+}
+
+void LRU::Remove(QueueNode *node) {
+    if (!node) {
         return;
     }
 
-    // Create a new node
-    auto *new_node = new QueueNode(key, page);
-    if (!front_) {
-        front_ = rear_ = new_node;
-    } else {
-        rear_->next_ = new_node;
-        new_node->prev_ = rear_;
-        rear_ = new_node;
-    }
-    ++size_;
+    Unlink(node);
 
-    // When the queue reaches the capacity, evict the least recently used page
-    if (size_ > capacity_) {
-        Evict();
-    }
-
-    // // If the page is not in the LRU queue
-    // if (page->eviction_policy_key_ != key) {
-    //     // When the queue reaches the capacity, evict the least recently used page
-    //     if (queue_->size() == capacity_) {
-    //         Evict();
-    //     }
-    //
-    //     // Insert the new page to the front of the queue
-    //
-    //     queue_->push_front(QueueNode(key, page));
-    //     // Update the eviction policy key of the page
-    //     page->eviction_policy_key_ = key;
-    // } else {
-    //     // If the page is already in the queue
-    //     // Find the page in the queue
-    //     const auto it =
-    //             std::find_if(queue_->begin(), queue_->end(), [&](const QueueNode &node) { return node.page_ == page;
-    //             });
-    //
-    //     // Move the page to the rear of the queue
-    //     queue_->splice(queue_->end(), *queue_, it);
-    // }
+    delete node;
 }
 
-void LRU::Evict() {
-    if (!front_)
-        return;
+QueueNode *LRU::Put(const int64_t key, Page *page) {
+    QueueNode *new_node = new QueueNode(key, page);
+    
+    AddToTail(new_node);
 
-    QueueNode *to_remove = front_;
-    if (front_ == rear_) {
-        front_ = rear_ = nullptr;
-    } else {
-        front_ = front_->next_;
-        front_->prev_ = nullptr;
-    }
-
-    delete to_remove;
-
-    --size_;
+    return new_node;
 }
 
-void LRU::EvictPage(Page *page) {
-    const QueueNode *current = front_;
+Page *LRU::Evict() {
+    if (IsEmpty())
+        return nullptr;
 
-    while (current) {
-        if (current->page_ == page) {
-            // If front
-            if (current == front_) {
-                front_ = current->next_;
-                if (front_) {
-                    front_->prev_ = nullptr;
-                }
-            }
-            // If rear
-            else if (current == rear_) {
-                rear_ = current->prev_;
-                if (rear_) {
-                    rear_->next_ = nullptr;
-                }
-            }
-            // If middle
-            else {
-                current->prev_->next_ = current->next_;
-                current->next_->prev_ = current->prev_;
-            }
-
-            delete current;
-            --size_;
-            return;
-        }
-        current = current->next_;
-    }
+    QueueNode *to_remove = dummy_->next_;
+    Page *evicted_page = to_remove->page_;
+    
+    Remove(to_remove);
+    
+    return evicted_page;
 }
 
 void LRU::Clear() {
-    while (front_) {
-        QueueNode *temp = front_;
-        front_ = front_->next_;
+    const QueueNode *current = dummy_->next_;
+    while (current != dummy_) {
+        const QueueNode *temp = current;
+        current = current->next_;
         delete temp;
     }
-    rear_ = nullptr;
-    size_ = 0;
+    dummy_->next_ = dummy_;
+    dummy_->prev_ = dummy_;
 }

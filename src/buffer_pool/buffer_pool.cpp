@@ -15,8 +15,7 @@ using namespace std;
 BufferPool::BufferPool(const size_t capacity) : capacity_(capacity), size_(0) {
     buckets_ = new vector<BucketNode *>(capacity_);
 
-    // set the LRU queue size to that of the buffer pool - 1
-    eviction_policy_ = new LRU(capacity_ - 1);
+    eviction_policy_ = new LRU();
 }
 
 BufferPool::~BufferPool() {
@@ -54,11 +53,15 @@ Page *BufferPool::FindPage(const string &id) const {
 }
 
 Page *BufferPool::Get(const string &page_id) const {
-    const auto page = FindPage(page_id);
-    if (page) {
-        LOG("  Page " << page_id << " hit in buffer pool");
-        eviction_policy_->Update(page);
-        return page;
+    const size_t index = HashFunction(page_id);
+    BucketNode *current = (*buckets_)[index];
+    while (current) {
+        if (current->page_->id_ == page_id) {
+            LOG("  Page " << page_id << " hit in buffer pool");
+            eviction_policy_->Update(current->lru_node_);
+            return current->page_;
+        }
+        current = current->next_;
     }
     LOG("    Page " << page_id << " does not hit in buffer pool");
     return nullptr;
@@ -77,27 +80,24 @@ Page *BufferPool::Put(const string &id, const vector<int64_t> &data) {
     Page *new_page = new Page(id, data);
 
     const size_t index = HashFunction(id);
-    BucketNode *new_node = new BucketNode(new_page);
+    BucketNode *new_node = new BucketNode(new_page, index);
     new_node->next_ = (*buckets_)[index];
     (*buckets_)[index] = new_node;
 
     ++size_;
 
-    // maintain the LRU queue
-    eviction_policy_->Put(index, new_page);
+    // maintain the LRU queue and record lru_node_ in BucketNode
+    new_node->lru_node_ = eviction_policy_->Put(index, new_page);
 
     return new_page;
 }
 
 void BufferPool::Remove() {
-    // if the LRU queue is empty, return
-    if (!eviction_policy_->front_)
+    // Evict least recently used page from LRU queue
+    const Page *page_to_remove = eviction_policy_->Evict();
+    if (!page_to_remove)
         return;
 
-    // get the page to remove
-    const Page *page_to_remove = eviction_policy_->front_->page_;
-    // remove the page from the LRU queue
-    eviction_policy_->Evict();
     LOG("    Removing page " << page_to_remove->id_ << " from buffer pool");
 
     // remove the page from the buffer pool
@@ -133,7 +133,7 @@ void BufferPool::RemoveLevel(int64_t level) {
             Page *page = current->page_;
 
             if (page->eviction_policy_key_ == level) {
-                eviction_policy_->EvictPage(page);
+                eviction_policy_->Remove(current->lru_node_);
 
                 if (prev) {
                     prev->next_ = current->next_;

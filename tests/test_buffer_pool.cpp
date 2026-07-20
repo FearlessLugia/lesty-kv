@@ -54,8 +54,8 @@ class TestBufferPool : public TestBase {
         // Check if the pages in the LRU queue are in the same address as the pages in the buffer pool
         // Check if the pages in the LRU queue are in the correct order
         // page3 should be the most recent (so in the back)
-        assert(bufferPool->eviction_policy_->front_->page_ == page2);
-        assert(bufferPool->eviction_policy_->rear_->page_ == page3);
+        assert(bufferPool->eviction_policy_->GetFront()->page_ == page2);
+        assert(bufferPool->eviction_policy_->GetRear()->page_ == page3);
 
         return true;
     }
@@ -70,8 +70,32 @@ class TestBufferPool : public TestBase {
         const Page *page = bufferPool->Get("test4");
 
         // Check if the pages in the LRU queue are in the correct order, page of name test4 should be the most recent
-        assert(bufferPool->eviction_policy_->rear_->page_ == page);
+        assert(bufferPool->eviction_policy_->GetRear()->page_ == page);
 
+        return true;
+    }
+
+    static bool TestBucketNodePointers() {
+        BufferPool *bufferPool = new BufferPool(4);
+
+        const string p1 = "p1";
+        const string p2 = "p2";
+        const string p3 = "p3";
+
+        bufferPool->Put(p1, {1});
+        bufferPool->Put(p2, {2});
+        bufferPool->Put(p3, {3});
+
+        // Verify order in LRU: front should be p1, rear should be p3
+        assert(bufferPool->eviction_policy_->GetFront()->page_->id_ == p1);
+        assert(bufferPool->eviction_policy_->GetRear()->page_->id_ == p3);
+
+        // Get p1 -> should move p1 to rear in O(1)
+        bufferPool->Get(p1);
+        assert(bufferPool->eviction_policy_->GetFront()->page_->id_ == p2);
+        assert(bufferPool->eviction_policy_->GetRear()->page_->id_ == p1);
+
+        delete bufferPool;
         return true;
     }
 
@@ -81,6 +105,7 @@ public:
         result &= AssertTrue(TestBuckets, "TestBufferPool::TestBuckets");
         result &= AssertTrue(TestLRU, "TestBufferPool::TestLRU");
         result &= AssertTrue(TestLRUEvict, "TestBufferPool::TestLRUEvict");
+        result &= AssertTrue(TestBucketNodePointers, "TestBufferPool::TestBucketNodePointers");
         return result;
     }
 };

@@ -11,27 +11,30 @@
 
 class LRU : public EvictionPolicy {
 public:
-    QueueNode *front_;
-    QueueNode *rear_;
+    LRU();
+    ~LRU() override;
 
-    size_t capacity_;
-    size_t size_ = 0;
+    QueueNode *Put(int64_t key, Page *page) override;
 
-    explicit LRU(size_t capacity);
-    ~LRU();
+    bool Update(QueueNode *node) override;
 
-    void MoveToTail(QueueNode *node);
+    Page *Evict() override;
 
-    bool Update(const Page *page);
+    void Remove(QueueNode *node) override;
 
-    void Put(int64_t key, Page *page) override;
+    void Clear() override;
 
-    void Evict() override;
+    [[nodiscard]] bool IsEmpty() const { return dummy_->next_ == dummy_; }
 
-    void EvictPage(Page *page) override;
+    [[nodiscard]] QueueNode *GetFront() const { return IsEmpty() ? nullptr : dummy_->next_; }
+    [[nodiscard]] QueueNode *GetRear() const { return IsEmpty() ? nullptr : dummy_->prev_; }
 
-    void Clear();
+private:
+    QueueNode *dummy_;
+
+    void AddToTail(QueueNode *node) const;
+
+    static void Unlink(const QueueNode *node);
 };
-
 
 #endif // LRU_H

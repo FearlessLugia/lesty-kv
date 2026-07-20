@@ -7,13 +7,21 @@
 
 #include "page.h"
 
+class QueueNode;
+
 class EvictionPolicy {
 public:
-    virtual void Put(int64_t key, Page *page) = 0;
+    virtual ~EvictionPolicy() = default;
 
-    virtual void Evict() = 0;
+    virtual QueueNode *Put(int64_t key, Page *page) = 0;
 
-    virtual void EvictPage(Page *page) = 0;
+    virtual bool Update(QueueNode *node) = 0;
+
+    virtual Page *Evict() = 0;
+
+    virtual void Remove(QueueNode *node) = 0;
+
+    virtual void Clear() = 0;
 };
 
 
