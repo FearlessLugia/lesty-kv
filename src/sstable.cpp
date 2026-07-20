@@ -243,19 +243,25 @@ vector<pair<int64_t, int64_t>> SSTable::Scan(const int64_t start_key, const int6
         return result;
     }
 
-    const bool is_sequential_flooding = (end_key - start_key + 1) / kPagePairs >= kPageSequentialFlooding;
-
     int64_t start_offset;
     if (min_key_ > start_key) {
         // Min key is larger than end key, scan from the beginning of data pages
         start_offset = GetDataStartOffset();
     } else {
-        if (is_sequential_flooding) {
-            LOG("  Scan range exceeds sequential flooding threshold, skipping buffer pool writes");
-        };
-
         // Else, binary search to find the upper bound of the start key
-        start_offset = BinarySearchUpperbound(start_key, is_sequential_flooding);
+        start_offset = BinarySearchUpperbound(start_key, false);
+    }
+
+    int64_t end_offset;
+    if (end_key > max_key_) {
+        end_offset = file_size_ > kPageSize ? file_size_ - kPageSize : GetDataStartOffset();
+    } else {
+        end_offset = BinarySearchUpperbound(end_key, false);
+    }
+
+    const bool is_sequential_flooding = (end_offset - start_offset) / kPageSize >= kPageSequentialFlooding;
+    if (is_sequential_flooding) {
+        LOG("  Scan range exceeds sequential flooding threshold, skipping buffer pool writes");
     }
     // LOG("\t\t\tStart offset: " << start_offset);
 
