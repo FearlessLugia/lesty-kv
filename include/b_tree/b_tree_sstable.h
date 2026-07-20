@@ -23,7 +23,7 @@ public:
 
     void WritePage(const off_t offset, const Page *page, bool is_final_page) const;
 
-    std::string FlushToStorage(const std::vector<int64_t> *data);
+    std::string FlushToStorage(const std::vector<std::pair<int64_t, int64_t>> *data);
 
     void GenerateBTreeLayers(std::vector<int64_t> prev_layer_nodes);
     off_t ReadOffset() const;

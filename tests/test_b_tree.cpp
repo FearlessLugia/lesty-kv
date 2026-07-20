@@ -21,10 +21,9 @@ class TestBTree : public TestBase {
 
         const auto btree = new BTreeSSTable(db_name, true, db.GetBufferPool(), db.GetSSTCounter());
 
-        vector<int64_t> data;
+        vector<pair<int64_t, int64_t>> data;
         for (auto i = 1; i <= 2048; ++i) {
-            data.push_back(i);
-            data.push_back(i * 100);
+            data.emplace_back(i, i * 100);
         }
         btree->FlushToStorage(&data);
 

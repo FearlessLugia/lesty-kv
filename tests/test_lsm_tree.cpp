@@ -22,42 +22,39 @@ class TestLsmTree : public TestBase {
         const auto b = new BTreeSSTable(db_name, true, db.GetBufferPool(), db.GetSSTCounter());
         const auto c = new BTreeSSTable(db_name, true, db.GetBufferPool(), db.GetSSTCounter());
 
-        vector<int64_t> data;
+        vector<pair<int64_t, int64_t>> data;
         for (auto i = 1; i <= 5000; i++) {
-            data.push_back(i);
-            data.push_back(i * 10);
+            data.emplace_back(i, i * 10);
         }
         a->FlushToStorage(&data);
 
         data.clear();
         for (auto i = 400; i <= 600; i++) {
-            data.push_back(i);
-            data.push_back(i * 100);
+            data.emplace_back(i, i * 100);
         }
         b->FlushToStorage(&data);
 
         data.clear();
         for (auto i = 500; i <= 1000; i++) {
-            data.push_back(i);
-            data.push_back(-i);
+            data.emplace_back(i, -i);
         }
         c->FlushToStorage(&data);
 
         auto *lsm_tree = db.GetLsmTree();
         const auto result = lsm_tree->SortMerge(new vector{a, b, c}, true);
 
-        assert(result.size() == 10000);
-        assert(result[0] == 1);
-        assert(result[1] == 10);
+        assert(result.size() == 5000);
+        assert(result[0].first == 1);
+        assert(result[0].second == 10);
 
-        assert(result[798] == 400);
-        assert(result[799] == 40000);
+        assert(result[399].first == 400);
+        assert(result[399].second == 40000);
 
-        assert(result[998] == 500);
-        assert(result[999] == -500);
+        assert(result[499].first == 500);
+        assert(result[499].second == -500);
 
-        assert(result[9998] == 5000);
-        assert(result[9999] == 50000);
+        assert(result[4999].first == 5000);
+        assert(result[4999].second == 50000);
 
         delete a;
         delete b;

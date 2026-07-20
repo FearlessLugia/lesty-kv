@@ -23,10 +23,9 @@ LsmTree::~LsmTree() {
     }
 }
 
-vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts, bool should_dispose_tombstone) {
+vector<pair<int64_t, int64_t>> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts, const bool should_dispose_tombstone) {
     LOG(" ┌Sort Merge " << (*ssts)[0]->file_path_ << " to " << (*ssts)[ssts->size() - 1]->file_path_);
-
-    vector<int64_t> result;
+    vector<pair<int64_t, int64_t>> result;
 
     // Use priority_queue as a min-heap
     priority_queue<HeapNode, vector<HeapNode>, greater<>> min_heap;
@@ -62,19 +61,15 @@ vector<int64_t> LsmTree::SortMerge(vector<BTreeSSTable *> *ssts, bool should_dis
         auto [key, value, page_index, sst_id] = min_heap.top();
         min_heap.pop();
 
-        // If largest level, should dispose tombstone
         if (should_dispose_tombstone && value == INT64_MIN) {
-            continue;
-        }
-
-        // Add to the result
-        // When key is duplicated, its sst_id would surely be smaller than the previous one
-        if (result.empty() || result[result.size() - 2] != key) {
-            result.push_back(key);
-            result.push_back(value);
-        }
-
-        // Update min-heap
+            // Tombstone, do not add to result
+        } else {
+            // Add to the result
+            // When key is duplicated, its sst_id would surely be smaller than the previous one
+            if (result.empty() || result.back().first != key) {
+                result.emplace_back(key, value);
+            }
+        } // Update min-heap
         auto &sst = (*ssts)[sst_id];
         auto &page = current_pages[sst_id];
         if (page_index + 2 <= page.size()) {

@@ -101,14 +101,18 @@ void BTreeSSTable::WritePage(const off_t offset, const Page *page, const bool is
 }
 
 
-string BTreeSSTable::FlushToStorage(const vector<int64_t> *data) {
+string BTreeSSTable::FlushToStorage(const vector<pair<int64_t, int64_t>> *data) {
+    if (!data || data->empty()) {
+        return "";
+    }
+
     const size_t start_pos = file_path_.find('/') + 1;
     const size_t end_pos = file_path_.rfind(".bin");
     const string sst_name = file_path_.substr(start_pos, end_pos - start_pos);
 
     vector<int64_t> prev_layer_nodes;
 
-    const size_t num_leaves = data->size() / (2 * kPagePairs);
+    const size_t num_leaves = data->size() / kPagePairs;
     const size_t num_internal_nodes = max(static_cast<size_t>(1), num_leaves / kFanOut);
 
     // 1 page for root
@@ -119,15 +123,17 @@ string BTreeSSTable::FlushToStorage(const vector<int64_t> *data) {
     const off_t start_offset = num_pages * kPageSize;
     off_t offset = start_offset;
 
+    size_t current_pair_index = 0;
+
     // Write the data to B-Tree leaf nodes
-    while (offset < start_offset + data->size() * kPairSize / 2) {
+    while (current_pair_index < data->size()) {
         vector<int64_t> page_data;
         page_data.clear();
 
         string page_id = sst_name + "_" + to_string(offset);
-        for (size_t j = (offset - start_offset) * 2 / kPairSize;
-             j < (offset - start_offset) * 2 / kPairSize + kPagePairs * 2 && j < data->size(); j++) {
-            page_data.push_back((*data)[j]);
+        for (size_t j = 0; j < kPagePairs && current_pair_index < data->size(); ++j, ++current_pair_index) {
+            page_data.push_back((*data)[current_pair_index].first);
+            page_data.push_back((*data)[current_pair_index].second);
         }
         LOG("  ┌-Current page size: " << page_data.size());
         const auto page = new Page(page_id, page_data);
@@ -158,8 +164,8 @@ string BTreeSSTable::FlushToStorage(const vector<int64_t> *data) {
     LOG(" └Flushed to SST: " << file_path_);
 
     file_size_ = GetFileSize();
-    min_key_ = (*data)[0];
-    max_key_ = (*data)[data->size() - 2];
+    min_key_ = data->front().first;
+    max_key_ = data->back().first;
 
     return file_path_;
 }

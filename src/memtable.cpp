@@ -29,12 +29,11 @@ vector<pair<int64_t, int64_t>> Memtable::Scan(const int64_t startKey, const int6
 
 void Memtable::Delete(const int64_t key) { Put(key, INT64_MIN); }
 
-vector<int64_t> Memtable::Traverse() const {
-    vector<int64_t> result;
+vector<pair<int64_t, int64_t>> Memtable::Traverse() const {
+    vector<pair<int64_t, int64_t>> result;
 
     for (const auto &[fst, snd]: table_) {
-        result.push_back(fst);
-        result.push_back(snd);
+        result.emplace_back(fst, snd);
     }
     return result;
 }
