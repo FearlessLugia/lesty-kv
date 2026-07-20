@@ -82,15 +82,15 @@ void BTreeSSTable::WritePage(const off_t offset, const Page *page, const bool is
     // Write the page to the file
     const auto data = page->data_;
 
-    int64_t buffer[min(kPagePairs * 2, data.size())];
-    memset(buffer, 0, sizeof(buffer));
+    const size_t buffer_elements = min(kPagePairs * 2, data.size());
+    vector<int64_t> buffer(buffer_elements, 0);
 
     // Change data to buffer
     for (size_t i = 0; i < data.size(); ++i) {
         buffer[i] = data[i];
     }
 
-    const ssize_t bytes_written = pwrite(fd_, &buffer, sizeof(buffer), offset);
+    const ssize_t bytes_written = pwrite(fd_, buffer.data(), buffer_elements * sizeof(int64_t), offset);
     if (bytes_written < 0) {
         cerr << "Failed to write page at offset " << offset << endl;
         exit(1);
