@@ -328,9 +328,8 @@ int64_t SSTable::BinarySearchUpperbound(const int64_t key, bool is_sequential_fl
         return -1;
     }
 
-    // Upper bound found within the page
-    const off_t key_offset = (page_left - 1) * kPairSize + page_offset;
-    return key_offset;
+    // Upper bound found within the page, return the aligned page_offset
+    return page_offset;
 }
 
 vector<pair<int64_t, int64_t>> SSTable::LinearSearchToEndKey(off_t start_offset, const int64_t start_key,

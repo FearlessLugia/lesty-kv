@@ -398,9 +398,8 @@ int64_t BTreeSSTable::BinarySearchUpperbound(const int64_t key, bool is_sequenti
         return -1;
     }
 
-    // Upper bound found within the page
-    const off_t key_offset = page_offset + (page_left - 1) * kPairSize;
-    return key_offset;
+    // Upper bound found within the page, return the aligned page_offset
+    return page_offset;
 }
 
 vector<pair<int64_t, int64_t>> BTreeSSTable::LinearSearchToEndKey(off_t start_offset, int64_t start_key,
