@@ -139,4 +139,6 @@ void BufferPool::Clear() {
     LOG("  Buffer pool cleared");
 }
 
-void BufferPool::Resize() {}
+void BufferPool::Resize() {
+    throw std::logic_error("Not implemented");
+}
