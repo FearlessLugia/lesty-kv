@@ -1,12 +1,16 @@
-mkdir build
-chmod 777 build
-cd ./build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make
+#!/usr/bin/env bash
 
-# Run experiments
-./kv-experiment
+set -euo pipefail
 
-# Plot graphs
-python3 ../plot_generator.py
+repository_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+build_dir="$repository_root/build"
 
+cmake -S "$repository_root" -B "$build_dir" -DCMAKE_BUILD_TYPE=Release
+cmake --build "$build_dir"
+
+(
+    cd "$build_dir"
+    ./kv-experiment
+)
+
+python3 "$repository_root/experiments/plot_generator.py"
